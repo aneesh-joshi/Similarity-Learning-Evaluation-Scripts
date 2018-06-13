@@ -1,4 +1,4 @@
-# How to reproduce your benchmark
+# How to reproduce my benchmarks
 This document will explain the newly introduced files, how they are to be used and how to reproduce my benchmarks.
 
 But before all that, here are my benchmarks. This output was generated and saved as a .csv using the script `evaluate_models.py`:
@@ -28,45 +28,28 @@ So, you will have to install pandas first by running the command:
 `pip install pandas`
 
 ## Current Directory Structure in gensim/similarity_learning
-```.
+```
 .
-├── HowToRunModels.md
-├── HowToReproduceBenchmarks.md
-├── __init__.py
-├── custom_callbacks.py
-├── custom_losses.py
-├── output_log_mse.txt
-├── output_log_rank_hing_loss.txt
-├── dssm_example.py
-├── evaluation_metrics.py
-├── model.png
+├── evaluate_models.py
+├── random_eval.py
 ├── data
-│   └── get_data.py
-├── evaluation_scripts
-│   ├── evaluate_models.py
-│   ├── mz_results
-│   │   ├── predict.test.anmm.wikiqa.txt
-│   │   ├── predict.test.arci.wikiqa.txt
-│   │   ├── predict.test.cdssm.wikiqa.txt
-│   │   ├── predict.test.conv_knrm_ranking.wikiqa.txt
-│   │   ├── predict.test.drmm_tks.wikiqa.txt
-│   │   ├── predict.test.drmm.wikiqa.txt
-│   │   ├── predict.test.dssm.wikiqa.txt
-│   │   ├── predict.test.duet.wikiqa.txt
-│   │   ├── predict.test.knrm_ranking.wikiqa.txt
-│   │   ├── predict.test.matchpyramid.wikiqa.txt
-│   │   └── predict.test.mvlstm.wikiqa.txt
-├── models
-│   ├── __init__.py
-│   ├── drmm_tks.py
-│   ├── dssm.py
-└───├─── preprocessing
-    ├── __init__.py
-    ├── list_generator.py
-    └── sl_vocab.py
+│   └──get_data.py
+├── ReadMe.md
+└── mz_results
+    ├── predict.test.anmm.wikiqa.txt
+    ├── predict.test.arci.wikiqa.txt
+    ├── predict.test.cdssm.wikiqa.txt
+    ├── predict.test.conv_knrm_ranking.wikiqa.txt
+    ├── predict.test.drmm_tks.wikiqa.txt
+    ├── predict.test.drmm.wikiqa.txt
+    ├── predict.test.dssm.wikiqa.txt
+    ├── predict.test.duet.wikiqa.txt
+    ├── predict.test.knrm_ranking.wikiqa.txt
+    ├── predict.test.matchpyramid.wikiqa.txt
+    └── predict.test.mvlstm.wikiqa.txt
 ```
 
-For reproducing benchmarks only, we can ignore everything except the contents of folders "evaluation_scripts" and "data"
+The data folder needs to be populated from the `get_data.py` file
 
 ## Getting the data
 Before we can run our evaluation script, we need to download the data set
@@ -91,13 +74,18 @@ Note:
 - the evaluation scripts don't use QuoraQP yet
 
 ## Running evaluations:
-The script for running evaluations is `evaluate_models.py` which can be found in `gensim/similarity_learning/evaluation_scripts/`
+The script for running evaluations is `evaluate_models.py`
 This script should be run to get a model-by-model or all-models evaluation. The script will evaluate the models based on their outputs to the "Train" split and save the results in a CSV if so prompted.
 
 When running benchmarks on MatchZoo, we need to enter the output files produced by MatchZoo when predicting on the test dataset. MatchZoo provides a file in the format `predict.test.wikiqa.txt`.
-In this case, I have collected my outputs and put them in `gensim/similarity_learning/evaluation_scripts/mz_results/` and renamed to include the name of the model used to generate it. So, `predict.test.wikiqa.txt` becomes `predict.test.model_name.wikiqa.txt`
+In this case, I have collected my outputs and put them in `mz_results/` and renamed to include the name of the model used to generate it. So, `predict.test.wikiqa.txt` becomes `predict.test.model_name.wikiqa.txt`
 
 Unfortunately, you will have to run [MatchZoo](https://github.com/faneshion/MatchZoo) and get the outputs yourself. For now, you can trust the results I have uploaded.
+If you want to reproduce it through MatchZoo, you'll have to:
+ 1. Clone the repo
+ 2. Execute `python setup.py install` which will build the build env
+ 3. Execute `run_data.sh` which will get the data and preprocess it (This takes some time and lots of bandwidth)
+ 4. Go to `examples/wikiqa/` and execute `run_mode_name.sh`
 
 
 The script has several parameters which are best understood through the `--help`
