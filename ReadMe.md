@@ -1,7 +1,7 @@
 # How to reproduce my benchmarks
-This document will explain the newly introduced files, how they are to be used and how to reproduce my benchmarks.
+This document will explain how to reproduce my benchmarks for some Similarity Learning models.
 
-But before all that, here are my benchmarks. This output was generated and saved as a .csv using the script `evaluate_models.py`:
+But before all that, here are my benchmarks. This output was generated and saved as a `.csv` using the script `evaluate_models.py`:
 
 Method | map | ndcg@1 | ndcg@3 | ndcg@5 | ndcg@10 | ndcg@20
 -- | -- | -- | -- | -- | -- | --
@@ -21,13 +21,13 @@ mvlstm | 0.585831 | 0.459916 | 0.597372 | 0.648699 | 0.692848 | 0.705998
 
 
 ## Additional dependencies:
-Unfortunately, the current state of the code needs the additional dependency of pandas, a module for hadnling .csv, .tsv, etc.
+Unfortunately, the current state of the code needs the additional dependency of pandas, a module for handling `.csv`, `.tsv`, etc.
 I was using it for grouping the datapoints by the document id. There are ways to do it without it and will be pushed soon.
 
 So, you will have to install pandas first by running the command:
 `pip install pandas`
 
-## Current Directory Structure in gensim/similarity_learning
+## Current Directory Structure
 ```
 .
 ├── evaluate_models.py
@@ -52,30 +52,30 @@ So, you will have to install pandas first by running the command:
 The data folder needs to be populated from the `get_data.py` file
 
 ## Getting the data
-Before we can run our evaluation script, we need to download the data set
-This can be done through the `get_data.py` script in `gensim/similarity_learning/data/`
+Before we can run our evaluation script, we need to download the data set.
+This can be done through the `get_data.py` script in `data/`
 
-It is a utility script to download and unzip the datsets for Similarity Learning
-It currently supports:
+It is a utility script to download and unzip the datsets for Similarity Learning. It currently supports:
 - WikiQA
 - Quora Duplicate Question Pairs
 - Glove 6 Billion tokens Word Embeddings
 
-To get wikiqa
-`$ python get_data.py --datafile wikiqa`
+To get all the datasets needed:
+    `$ python get_data.py --datafile all`
 
-To get quoraqp
-`$ python get_data.py --datafile quoraqp`
+To get Wiki Question Answering dataset:
+    `$ python get_data.py --datafile wikiqa`
+
+To get Quora Duplicate Questions/Question Pairs dataset:
+    `$ python get_data.py --datafile quoraqp`
 
 To get Glove Word Embeddings
 `$ python get_data.py --datafile glove`
 
-Note: 
-- the evaluation scripts don't use QuoraQP yet
+Note: the evaluation scripts don't use QuoraQP yet
 
 ## Running evaluations:
-The script for running evaluations is `evaluate_models.py`
-This script should be run to get a model-by-model or all-models evaluation. The script will evaluate the models based on their outputs to the "Train" split and save the results in a CSV if so prompted.
+The script for running evaluations is `evaluate_models.py`. This script should be run to get a model-by-model or all-models evaluation. The script will evaluate the models based on their outputs to the "Train" split and save the results in a `.csv` if so prompted.
 
 When running benchmarks on MatchZoo, we need to enter the output files produced by MatchZoo when predicting on the test dataset. MatchZoo provides a file in the format `predict.test.wikiqa.txt`.
 In this case, I have collected my outputs and put them in `mz_results/` and renamed to include the name of the model used to generate it. So, `predict.test.wikiqa.txt` becomes `predict.test.model_name.wikiqa.txt`
@@ -83,10 +83,11 @@ In this case, I have collected my outputs and put them in `mz_results/` and rena
 Unfortunately, you will have to run [MatchZoo](https://github.com/faneshion/MatchZoo) and get the outputs yourself. For now, you can trust the results I have uploaded.
 If you want to reproduce it through MatchZoo, you'll have to:
  1. Clone the repo
- 2. Execute `python setup.py install` which will build the build env
+ 2. Execute `python setup.py install` which will install the build env
  3. Execute `run_data.sh` which will get the data and preprocess it (This takes some time and lots of bandwidth)
  4. Go to `examples/wikiqa/` and execute `run_mode_name.sh`
 
+(Wishlist : I will add a bash script to do all of the above. But that will take time and a lot of testing.)
 
 The script has several parameters which are best understood through the `--help`
 
@@ -104,7 +105,7 @@ optional arguments:
                         mz_eval_multiple
   --datapath DATAPATH   path to the folder with WikiQACorpus. Path should
                         include WikiQACorpus Make sure you have run
-                        get_data.py in gensim/similarity_learning/data/
+                        get_data.py in data/
   --word_embedding_path WORD_EMBEDDING_PATH
                         path to the Glove word embedding file
   --mz_result_file MZ_RESULT_FILE
@@ -119,14 +120,15 @@ optional arguments:
 
 ### Example usage:
 
-For evaluating drmm_tks model on the WikiQA corpus
-$ python evaluate_models.py --model drmm_tks --datapath ../data/WikiQACorpus/ --word_embedding_path ../evaluation_scripts/glove.6B.50d.txt --result_save_path results_drmm_tks
+For evaluating drmm_tks model on the WikiQA corpus:
 
-For evaluating doc2vec on the WikiQA corpus
+`$ python evaluate_models.py --model drmm_tks --datapath ../data/WikiQACorpus/ --word_embedding_path ../evaluation_scripts/glove.6B.50d.txt --result_save_path results_drmm_tks`
+
+For evaluating doc2vec on the WikiQA corpus:
 
 `$ python evaluate_models.py --model doc2vec --datapath ../data/WikiQACorpus/`
 
-For evaluating word2vec averaging on the WikiQA corpus
+For evaluating word2vec averaging on the WikiQA corpus:
 
 `$ python evaluate_models.py --model word2vec --datapath ../data/WikiQACorpus/ --word_embedding_path ../evaluation_scripts/glove.6B.50d.txt`
 
@@ -134,7 +136,7 @@ For evaluating the TREC format file produced by MatchZoo:
 
 `$ python evaluate_models.py  --model mz --mz_result_file predict.test.wikiqa.txt`
 
-Note: here "predict.test.wikiqa.txt" is the file output by MZ. It has been provided in this repo as an example.
+Note: here "predict.test.wikiqa.txt" is the file output by MZ. It has been provided in this repo as an example in `mz_results/`.
 
 For evaluating all models
 
