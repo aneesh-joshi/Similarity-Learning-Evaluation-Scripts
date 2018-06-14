@@ -1,12 +1,12 @@
-from gensim.similarity_learning import WikiQAExtractor
-from gensim.similarity_learning import WikiQA_DRMM_TKS_Extractor
+from gensim.similarity_learning.preprocessing import WikiQAExtractor
+from gensim.similarity_learning.preprocessing import WikiQA_DRMM_TKS_Extractor
 from gensim.similarity_learning.preprocessing import ListGenerator
-from gensim.similarity_learning.models import DRMM_TKS
 from gensim.similarity_learning import rank_hinge_loss
 from gensim.models.doc2vec import TaggedDocument, Doc2Vec
 from gensim.similarity_learning import ValidationCallback
 from gensim.similarity_learning import mapk, mean_ndcg
-from gensim.similarity_learning.optimizers import *
+from keras import optimizers
+from gensim.models.experimental import DRMM_TKS
 from keras.losses import hinge
 import keras.backend as K
 import numpy as np
@@ -15,12 +15,15 @@ import argparse
 import os
 import logging
 import time
+import six
+
 
 logger = logging.getLogger(__name__)
 
 """
 This script should be run to get a model by model based or full evaluation
-Make sure you run gensim/similarity_learning/data/get_data.py to get the datasets
+Make sure you run gensim/similarity_learning/data/get_data.py to
+get the datasets
 
 Currently supports
 - DRMM TKS
@@ -32,13 +35,12 @@ Example usage:
 ==============
 
 For evaluating drmm_tks on the WikiQA corpus
-    $ python evaluate_models.py --model drmm_tks --datapath ../data/WikiQACorpus/ --word_embedding_path ../evaluation_scripts/glove.6B.50d.txt --result_save_path results_drmm_tks
-
+    $ python evaluate_models.py --model drmm_tks --datapath data/WikiQACorpus/ --word_embedding_path data/glove.6B.50d.txt --result_save_path results_drmm_tks  # noqa
 For evaluating doc2vec on the WikiQA corpus
-    $ python evaluate_models.py --model doc2vec --datapath ../data/WikiQACorpus/ --result_save_path results_d2v
+    $ python evaluate_models.py --model doc2vec --datapath data/WikiQACorpus/ --result_save_path results_d2v
 
 For evaluating word2vec averaging on the WikiQA corpus
-    $ python evaluate_models.py --model word2vec --datapath ../data/WikiQACorpus/ --word_embedding_path ../evaluation_scripts/glove.6B.50d.txt  --result_save_path results_w2v
+    $ python evaluate_models.py --model word2vec --datapath data/WikiQACorpus/ --word_embedding_path data/glove.6B.50d.txt  --result_save_path results_w2v
 
 For evaluating the TREC format file produced by MatchZoo:
     $ python evaluate_models.py  --model mz --mz_result_file mz_results/predict.test.anmm.wikiqa.txt
@@ -46,9 +48,9 @@ Note: here "predict.test.anmm.wikiqa.txt" is the file output by MZ. It has been 
 
 For evaluating all models
 -with one mz output file
-    $ python evaluate_models.py --model all --mz_result_file mz_results/predict.test.anmm.wikiqa.txt --result_save_path results_mz_file --word_embedding_path ../evaluation_scripts/glove.6B.50d.txt --datapath ../data/WikiQACorpus/
+    $ python evaluate_models.py --model all --mz_result_file mz_results/predict.test.anmm.wikiqa.txt --result_save_path results_mz_file --word_embedding_path data/glove.6B.50d.txt --datapath data/WikiQACorpus/
 -with a mz folder filled with result files
-    $ python evaluate_models.py  --model all --mz_result_folder mz_results/ --result_save_path results_all --datapath ../data/WikiQACorpus/ --word_embedding_path ../evaluation_scripts/glove.6B.50d.txt
+    $ python evaluate_models.py  --model all --mz_result_folder mz_results/ --result_save_path results_all --datapath data/WikiQACorpus/ --word_embedding_path data/glove.6B.50d.txt
 """
 
 
@@ -70,7 +72,16 @@ results_list = []
 
 def cos_sim(vec1, vec2):
     """Calculates the cosine similarity of 2 vectos
+
+    Raises:
+    ------
+        Value Error : The vectors cannot be zero vectors as
+                      Cosine Similarity is undefined for it
     """
+    if np.linalg.norm(vec1) == 0 or np.linalg.norm(vec2) == 0:
+        raise ValueError("The vectors cannot be zero vectors as"
+                         "Cosine Similarity is undefined for it")
+
     return np.sum(vec1 * vec2) / (np.linalg.norm(vec1) * np.linalg.norm(vec2))
 
 
@@ -103,16 +114,17 @@ def doc2vec_eval(datapath, vec_size=20, alpha=0.025):
         The initial learning rate.
     """
     # load testing data
+    logger.info("Evaluating Doc2Vec")
     wikiqa_train = WikiQAExtractor(os.path.join(datapath, "WikiQA-test.tsv"))
     train_data = wikiqa_train.get_preprocessed_corpus()
     lls = LabeledLineSentence(train_data)
 
     initial_time = time.time()
     logger.info("Building and training doc2vec model")
-    model = Doc2Vec(size=vec_size, alpha=alpha, min_alpha=0.025, min_count=1, dm=1,
-                    iter=50)
+    model = Doc2Vec(vector_size=vec_size, alpha=alpha, min_alpha=0.025,
+                    min_count=1, dm=1, epochs=50)
     model.build_vocab(lls)
-    model.train(lls, total_examples=model.corpus_count, epochs=model.iter)
+    model.train(lls, total_examples=model.corpus_count, epochs=model.epochs)
     logger.info("Building and training of doc2vec done")
     logger.info("Time taken to train is %f" %
                 float(time.time() - initial_time))
@@ -161,6 +173,7 @@ def word2vec_eval(datapath, word_embedding_path):
     # load test data
     # Note: here we are not using train data to keep results consistent with
     # other models
+    logger.info("Evaluating Word2Vec")
     wikiqa_test = WikiQAExtractor(os.path.join(datapath, "WikiQA-test.tsv"))
     test_doc_data = wikiqa_test.get_data()
 
@@ -169,19 +182,29 @@ def word2vec_eval(datapath, word_embedding_path):
     w2v = {}
     with open(word_embedding_path) as f:
         for line in f:
-            string_array = np.array(line.split()[1:])
+            string_array = line.split()[1:]
             string_array = [float(i) for i in string_array]
-            w2v[line.split()[0]] = string_array
+            w2v[line.split()[0]] = np.array(string_array)
     logger.info("Word-vec dict build complete")
+
+    embedding_dim = six.next(
+        six.itervalues(w2v)).shape[0]
+    logger.info("The embedding dimension of the provided vectors is %d" %
+                embedding_dim)
 
     def sent2vec(w2v, sentence):
         """Function to convert a sentence into an averaged vector
         """
-        vec_sum = []
+        vec_sum = np.zeros((embedding_dim,))
+        n_relevant_words = 0
         for word in sentence.split():
             if word in w2v:
-                vec_sum.append(w2v[word])
-        return np.mean(np.array(vec_sum), axis=0)
+                vec_sum += w2v[word]
+                n_relevant_words += 1
+        if n_relevant_words > 0:
+            return vec_sum / n_relevant_words
+        else:
+            return vec_sum
 
     Y_true = []
     Y_pred = []
@@ -189,7 +212,15 @@ def word2vec_eval(datapath, word_embedding_path):
         y_true = []
         y_pred = []
         for query, doc, label in query_doc_group:
-            y_pred.append(cos_sim(sent2vec(w2v, query), sent2vec(w2v, doc)))
+            sent_vec, doc_vec = sent2vec(w2v, query), sent2vec(w2v, doc)
+            if np.sum(sent_vec) == 0 or np.sum(doc_vec) == 0:
+                logger.info(
+                    "Encountered a zero vector for sentence."
+                    " Skipping current query-doc pair: \"%s\", \"%s\" "
+                    "This happens when none of the words in the sentence are"
+                    "in the word embeddings", query, doc)
+                continue
+            y_pred.append(cos_sim(sent_vec, doc_vec))
             y_true.append(label)
         Y_true.append(y_true)
         Y_pred.append(y_pred)
@@ -203,9 +234,9 @@ def word2vec_eval(datapath, word_embedding_path):
     logger.info(results)
 
     results_list.append(results)
-    # TODO we can do an evaluation on the whole dataset since this is unsupervised
-    # currently WikiQAExtractor cannot support multiple files. Add it.
-    # call it get_unsupervised_data or something
+    # TODO we can do an evaluation on the whole dataset since this
+    # is unsupervised currently WikiQAExtractor cannot support
+    # multiple files. Add it. call it get_unsupervised_data or something
 
     # TODO add option to train on multiple w2v dimension files
     # Example: [50d, 100d, 200d, etc]
@@ -222,10 +253,11 @@ def mz_eval(mz_output_file):
     mz_output_file : string
         path to MatchZoo output TREC format file
     """
-
+    logger.info("Evaluating MatchZoo outputs on file %s" % mz_output_file)
     with open(mz_output_file) as f:
         df = pd.read_csv(f, sep='\t', names=[
-            "QuestionID", "Q0", "Doc ID", "Doc No", "predicted_score", "model name", "actual_score"])
+            "QuestionID", "Q0", "Doc ID", "Doc No", "predicted_score",
+            "model name", "actual_score"])
 
     Y_true = []
     Y_pred = []
@@ -259,11 +291,13 @@ def mz_eval_multiple(mz_output_file_dir):
     mz_output_file_dir : string
         path to folder with MatchZoo output TREC format files
     """
-
+    logger.info("Evaluating MatchZoo outputs on files in folder %s" %
+                mz_output_file_dir)
     for mz_output_file in os.listdir(mz_output_file_dir):
         with open(os.path.join(mz_output_file_dir, mz_output_file)) as f:
             df = pd.read_csv(f, sep='\t', names=[
-                             "QuestionID", "Q0", "Doc ID", "Doc No", "predicted_score", "model name", "actual_score"])
+                             "QuestionID", "Q0", "Doc ID", "Doc No",
+                             "predicted_score", "model name", "actual_score"])
 
         Y_true = []
         Y_pred = []
@@ -290,33 +324,43 @@ def mz_eval_multiple(mz_output_file_dir):
 
 
 def drmm_tks_eval(datapath, word_embedding_path):
-    # Here, we'll add the test file. You can also use the validation file if
-    # needed.
+    """Evaluation function for DRMM TKS model
+
+    This will train and evaluate it"""
+    logger.info("Evaluating DRMM TKS")
     train_file_path = os.path.join(datapath, 'WikiQA-train.tsv')
     test_file_path = os.path.join(datapath, 'WikiQA-test.tsv')
     dev_file_path = os.path.join(datapath, 'WikiQA-dev.tsv')
 
-    wikiqa_train = WikiQA_DRMM_TKS_Extractor(file_path=train_file_path, word_embedding_path=word_embedding_path,
-                                             keep_full_embedding=True, text_maxlen=140, normalize_embeddings=True)
+    wikiqa_train = WikiQA_DRMM_TKS_Extractor(
+            file_path=train_file_path, word_embedding_path=word_embedding_path,
+            keep_full_embedding=True, text_maxlen=140,
+            normalize_embeddings=True)
 
-    dev_list_gen = ListGenerator(dev_file_path, text_maxlen=wikiqa_train.text_maxlen,
-                                 train_word2index=wikiqa_train.word2index,
-                                 additional_word2index=wikiqa_train.additional_word2index,
-                                 oov_handle_method="ignore", zero_word_index=wikiqa_train.zero_word_index,
-                                 train_pad_word_index=wikiqa_train.pad_word_index,
-                                 embedding_matrix=wikiqa_train.embedding_matrix)
+    dev_list_gen = ListGenerator(
+                    dev_file_path, text_maxlen=wikiqa_train.text_maxlen,
+                    train_word2index=wikiqa_train.word2index,
+                    additional_word2index=wikiqa_train.additional_word2index,
+                    oov_handle_method="ignore",
+                    zero_word_index=wikiqa_train.zero_word_index,
+                    train_pad_word_index=wikiqa_train.pad_word_index,
+                    embedding_matrix=wikiqa_train.embedding_matrix)
 
-    test_list_gen = ListGenerator(test_file_path, text_maxlen=wikiqa_train.text_maxlen,
-                                  train_word2index=wikiqa_train.word2index,
-                                  additional_word2index=wikiqa_train.additional_word2index,
-                                  oov_handle_method="ignore", zero_word_index=wikiqa_train.zero_word_index,
-                                  train_pad_word_index=wikiqa_train.pad_word_index,
-                                  embedding_matrix=wikiqa_train.embedding_matrix)
+    test_list_gen = ListGenerator(
+                    test_file_path, text_maxlen=wikiqa_train.text_maxlen,
+                    train_word2index=wikiqa_train.word2index,
+                    additional_word2index=wikiqa_train.additional_word2index,
+                    oov_handle_method="ignore",
+                    zero_word_index=wikiqa_train.zero_word_index,
+                    train_pad_word_index=wikiqa_train.pad_word_index,
+                    embedding_matrix=wikiqa_train.embedding_matrix)
 
     X1_train, X2_train, y_train = wikiqa_train.get_full_batch()
 
-    drmm_tks = DRMM_TKS(embedding=wikiqa_train.embedding_matrix, vocab_size=wikiqa_train.embedding_matrix.shape[0],
-                        text_maxlen=wikiqa_train.text_maxlen)
+    drmm_tks = DRMM_TKS(
+                embedding=wikiqa_train.embedding_matrix,
+                vocab_size=wikiqa_train.embedding_matrix.shape[0],
+                text_maxlen=wikiqa_train.text_maxlen)
 
     model = drmm_tks.get_model()
     model.summary()
@@ -335,7 +379,8 @@ def drmm_tks_eval(datapath, word_embedding_path):
 
     model.compile(optimizer=optimizer, loss=loss, metrics=['accuracy'])
     model.fit(x={"query": X1_train, "doc": X2_train}, y=y_train, batch_size=5,
-              verbose=1, epochs=100, shuffle=True, callbacks=[ValidationCallback(validation_data)])
+              verbose=1, epochs=1, shuffle=True,
+              callbacks=[ValidationCallback(validation_data)])
 
     data = test_list_gen.get_list_data()
     X1 = data["X1"]
@@ -363,7 +408,8 @@ def drmm_tks_eval(datapath, word_embedding_path):
     results_list.append(results)
 
 
-def write_results_to_file(results_list, file_to_write, k_range=[1, 3, 5, 10, 20]):
+def write_results_to_file(results_list, file_to_write,
+                          k_range=[1, 3, 5, 10, 20]):
     """Writes the evaluated metrics in the given
     """
     k_range = ["ndcg@" + str(k) for k in k_range]
@@ -396,13 +442,15 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--model',
                         default='all',
-                        help='runs the evaluation on the given model type. Options are:\
-                        drmm_tks, doc2vec, word2vec, mz_eval, mz_eval_multiple')
+                        help='runs the evaluation on the given model type.'
+                        'Options are:drmm_tks, doc2vec, word2vec, mz_eval,'
+                        ' mz_eval_multiple')
 
     # Note: we currently only support WikiQA
     parser.add_argument('--datapath',
-                        help='path to the folder with WikiQACorpus. Path should include WikiQACorpus\
-                         Make sure you have run get_data.py in gensim/similarity_learning/data/')
+                        help='path to the folder with WikiQACorpus. Path'
+                        'should include WikiQACorpus. Make sure you have'
+                        ' run get_data.py in data/')
 
     # TODO include gensim-data path to word embeddings
     parser.add_argument('--word_embedding_path',
@@ -417,7 +465,8 @@ if __name__ == '__main__':
 
     parser.add_argument('--mz_result_folder',
                         default=None,
-                        help='path to mz folder with many test prediction outputs')
+                        help='path to mz folder with many test prediction'
+                        ' outputs')
 
     args = parser.parse_args()
     if args.model == 'doc2vec':
@@ -441,5 +490,7 @@ if __name__ == '__main__':
         elif args.mz_result_folder is not None:
             mz_eval_multiple(args.mz_result_folder)
 
-    if (args.result_save_path or results_list) is not None:
+    logger.info("All Evaluations complete")
+
+    if args.result_save_path is not None and len(results_list) > 0:
         write_results_to_file(results_list, args.result_save_path)
