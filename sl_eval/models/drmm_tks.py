@@ -91,7 +91,7 @@ from .utils.evaluation_metrics import mapk, mean_ndcg
 from sklearn.preprocessing import normalize
 from gensim import utils
 from collections import Iterable
-
+from keras.utils.np_utils import to_categorical
 try:
     import keras.backend as K
     from keras import optimizers
@@ -451,10 +451,14 @@ class DRMM_TKS(utils.SaveLoad):
 
         indexed_sent = []
         for word in sentence:
-            indexed_sent.append(self.word2index[word])
+            if word in self.word2index:
+                indexed_sent.append(self.word2index[word])
+            else:
+                indexed_sent.append(self.unk_word_index)
 
         if len(indexed_sent) > self.text_maxlen:
-            raise ValueError(
+            indexed_sent = indexed_sent[:self.text_maxlen]
+            print(
                 "text_maxlen: %d isn't big enough. Error at sentence of length %d."
                 "Sentence is %s" % (self.text_maxlen, len(sentence), sentence)
             )
@@ -563,6 +567,7 @@ class DRMM_TKS(utils.SaveLoad):
             loss = rank_hinge_loss
             if self.target_mode == 'classification':
                 loss = 'categorical_crossentropy'
+                optimizer = 'adam'
             self.model.compile(optimizer=optimizer, loss=loss, metrics=['accuracy'])
         else:
             logger.info("Model will be retrained")
@@ -866,9 +871,39 @@ class DRMM_TKS(utils.SaveLoad):
         mean = Dot(axes=[1, 1])([mm_reshape, g])
 
         if self.target_mode == 'classification':
+            #out_ = Dense(64, activation='relu')(mean)
             out_ = Dense(2, activation='softmax')(mean)
         elif self.target_mode in ['regression', 'ranking']:
             out_ = Reshape((1,))(mean)
 
         model = Model(inputs=[query, doc], outputs=out_)
         return model
+
+    def evaluate_classification(self, X1, X2, D, batch_size=20):
+        batch_size=20
+        num_correct = 0
+        num_total = 0
+        x1_batch, x2_batch, dupl_batch = [], [], []
+        test_X, test_Y = [], []
+        for x1, x2, d in zip(X1, X2, D):
+            x1_batch.append(self._make_indexed(x1))
+            x2_batch.append(self._make_indexed(x2))
+            dupl_batch.append(to_categorical(d, 2))
+
+            if len(x1_batch) % batch_size == 0:
+                test_X.append({'query': np.array(x1_batch), 'doc': np.array(x2_batch)})
+                test_Y.append(np.squeeze(np.array(dupl_batch)))
+
+                for tx, ty in zip(test_X, test_Y):
+                    this_pred = self.model.predict(tx)
+                    print(this_pred)
+                    for pred_val, true_val in zip(this_pred, ty):
+                        print(pred_val, true_val)
+                        if np.argmax(pred_val) == np.argmax(true_val):
+                            num_correct += 1
+                        num_total += 1
+
+                x1_batch, x2_batch, dupl_batch, x1_len, x2_len = [], [], [], [], []
+                test_X, test_Y = [], []
+
+        print(num_correct, num_total, num_correct/num_total) 
