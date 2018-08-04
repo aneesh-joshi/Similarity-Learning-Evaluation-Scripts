@@ -1,18 +1,20 @@
+import sys
+sys.path.append('../..')
 import os
 import csv
 import re
 import gensim.downloader as api
 from gensim.utils import simple_preprocess
 import numpy as np
-from drmm_tks import DRMM_TKS
-from matchpyramid import MatchPyramid
+from sl_eval.models import DRMM_TKS
+from sl_eval.models import MatchPyramid
 import argparse
 
 """This script will save the TREC format of the predicions of a word2vec model and a drmm tks model
 
 Usage
 -----
-$ python save_eval_TREC_format.py --wikiqa_path experimental_data/WikiQACorpus/WikiQA-test.tsv --model_path path/to/model
+$ python save_eval_TREC_format.py --wikiqa_path experimental_data/WikiQACorpus/WikiQA-test.tsv --model_path path/to/model --model_type mp
 
 Please refer to http://www.rafaelglater.com/en/post/learn-how-to-use-trec_eval-to-evaluate-your-information-retrieval-system
 to get a complete understanding of trec
