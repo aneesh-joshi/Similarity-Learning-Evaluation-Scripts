@@ -325,10 +325,10 @@ if __name__ == '__main__':
 
     if model_type == 'dtks':
         dtks_model = DRMM_TKS.load(model_path)
-        save_model_pred('pred_dtks_' + str(model_path), dtks_similarity_fn)
+        save_model_pred(str(model_path) + 'pred', dtks_similarity_fn)
     elif model_type == 'mp':
         mp_model = MatchPyramid.load(model_path)
-        save_model_pred('pred_mp_' + str(model_path), mp_similarity_fn)
+        save_model_pred(str(model_path) + 'pred', mp_similarity_fn)
 #    elif model_type == 'bimpm':
         
 
