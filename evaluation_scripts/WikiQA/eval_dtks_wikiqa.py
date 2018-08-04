@@ -1,13 +1,13 @@
 import sys
 sys.path.append('../..')
-import sys
 import os
-
-from sl_eval.models import MatchPyramid
+from sl_eval.models import DRMM_TKS
 import gensim.downloader as api
 from utils import MyWikiIterable
 
 
+model_save_path = 'saved_models'
+model_name = 'dtks_wikiqa_model'
 
 wikiqa_folder = '..', '..', 'data', 'WikiQACorpus'
 
@@ -24,15 +24,15 @@ d_test_iterable = MyWikiIterable('doc', os.path.join(wikiqa_folder, 'WikiQA-test
 l_test_iterable = MyWikiIterable('label', os.path.join(wikiqa_folder, 'WikiQA-test.tsv'))
 
 
-
 kv_model = api.load('glove-wiki-gigaword-300')
 
 # Train the model
-mp_model = MatchPyramid(
-                    queries=q_iterable, docs=d_iterable, labels=l_iterable, word_embedding=kv_model, epochs=6, text_maxlen=200 #validation_data=[q_val_iterable, d_val_iterable, l_val_iterable],
+drmm_tks_model = DRMM_TKS(
+                    queries=q_iterable, docs=d_iterable, labels=l_iterable, word_embedding=kv_model, epochs=3,
+                    validation_data=[q_val_iterable, d_val_iterable, l_val_iterable], topk=20
                 )
 
 print('Test set results')
-mp_model.evaluate(q_test_iterable, d_test_iterable, l_test_iterable)
-model_save_path = 'saved_models'
-mp_model.save(os.path.join(model_save_path, 'my_mp_mpdel'))
+drmm_tks_model.evaluate(q_test_iterable, d_test_iterable, l_test_iterable)
+
+drmm_tks_model.save(os.path.join(model_save_path, model_name))
