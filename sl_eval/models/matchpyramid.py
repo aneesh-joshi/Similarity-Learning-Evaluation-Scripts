@@ -868,10 +868,12 @@ class MatchPyramid(utils.SaveLoad):
         pool1_flat_drop = Dropout(rate=dropout_rate)(pool1_flat)
 
         if self.target_mode == 'classification':
+            out_ = Dense(200, activation='relu')(pool1_flat_drop)
+            out_ = Dense(64, activation='relu')(out_)
             out_ = Dense(2, activation='softmax')(pool1_flat_drop)
         elif self.target_mode in ['regression', 'ranking']:
-            out_ = Dense(200)(pool1_flat_drop)
-            out_ = Dense(64)(out_)
+            out_ = Dense(200, activation='relu')(pool1_flat_drop)
+            out_ = Dense(64, activation='relu')(out_)
             out_ = Dense(1)(out_)
 
         model = Model(inputs=[query, doc, dpool_index], outputs=out_)
