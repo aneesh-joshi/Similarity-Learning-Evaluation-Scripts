@@ -5,14 +5,74 @@
 # Copyright (C) 2018 RaRe Technologies s.r.o.
 # Licensed under the GNU LGPL v2.1 - http://www.gnu.org/licenses/lgpl.html
 
-"""This module makes a trainable and usable model for getting similarity between documents using the MatchPyramid model.
+"""This module makes a trainable and usable model for getting similarity between documents using the DRMM_TKS model.
 
 Once the model is trained with the query-candidate-relevance data, the model can provide a vector for each new
 document which is entered into it. The similarity between any 2 documents can then be measured using the
 cosine similarty between the vectors.
 
+Abbreviations
+=============
+- DRMM : Deep Relevance Matching Model
+- TKS : Top K Solutions
+
+About DRMM_TKS
+==============
+This is a variant version of DRMM, which applied topk pooling in the matching matrix.
+It has the following steps:
+
+1. embed queries and docs into embedding vector named `q_embed` and `d_embed` respectively.
+2. computing `q_embed` and `d_embed` with element-wise multiplication.
+3. computing output of upper layer with dense layer operation.
+4. take softmax operation on the output of this layer named `g` and find the k largest entries named `mm_k`.
+5. input `mm_k` into hidden layers, with specified length of layers and activation function.
+6. compute `g` and `mm_k` with element-wise multiplication.
+
 On predicting, the model returns the score list between queries and documents.
 
+The trained model needs to be trained on data in the format:
+
+>>> from gensim.models.experimental import DRMM_TKS
+>>> import gensim.downloader as api
+>>> queries = ["When was World War 1 fought ?".lower().split(), "When was Gandhi born ?".lower().split()]
+>>> docs = [["The world war was bad".lower().split(), "It was fought in 1996".lower().split()], ["Gandhi was born in"
+...        "the 18th century".lower().split(), "He fought for the Indian freedom movement".lower().split(),
+...        "Gandhi was assasinated".lower().split()]]
+>>> labels = [[0, 1], [1, 0, 0]]
+>>> word_embeddings_kv = api.load('glove-wiki-gigaword-50')
+>>> model = DRMM_TKS(queries, docs, labels, word_embedding=word_embeddings_kv, verbose=0)
+
+Persist a model to disk with :
+
+>>> from gensim.test.utils import get_tmpfile
+>>> file_path = get_tmpfile('DRMM_TKS.model')
+>>> model.save(file_path)
+>>> model = DRMM_TKS.load(file_path)
+
+You can also create the modela and train it later :
+
+>>> model = DRMM_TKS()
+>>> model.train(queries, docs, labels, word_embeddings_kv, epochs=12, verbose=0)
+
+Testing on new data :
+
+>>> from gensim.test.utils import datapath
+>>> model = DRMM_TKS.load(datapath('drmm_tks'))
+>>>
+>>> queries = ["how are glacier caves formed ?".lower().split()]
+>>> docs = [["A partly submerged glacier cave on Perito Moreno Glacier".lower().split(), "glacier cave is cave formed"
+...        " within the ice of glacier".lower().split()]]
+>>> print(model.predict(queries, docs))
+[[0.9915068 ]
+ [0.99228466]]
+>>> print(model.predict([["hello", "world"]], [[["i", "am", "happy"], ["good", "morning"]]]))
+[[0.9975487]
+ [0.999115 ]]
+
+
+More information can be found in:
+`Jiafeng Guo, Yixing Fan, Qingyao Ai, W. Bruce Croft "A Deep Relevance Matching Model for Ad-hoc Retrieval"
+<http://www.bigdatalab.ac.cn/~gjf/papers/2016/CIKM2016a_guo.pdf>`_
 `MatchZoo Repository <https://github.com/faneshion/MatchZoo>`_
 `Similarity Learning Wikipedia Page <https://en.wikipedia.org/wiki/Similarity_learning>`_
 
@@ -25,13 +85,12 @@ from numpy import random as np_random
 from gensim.models import KeyedVectors
 from collections import Counter
 from .utils.custom_losses import rank_hinge_loss
-from .utils.custom_layers import TopKLayer, DynamicMaxPooling
+from .utils.custom_layers import TopKLayer
 from .utils.custom_callbacks import ValidationCallback
 from .utils.evaluation_metrics import mapk, mean_ndcg
 from sklearn.preprocessing import normalize
 from gensim import utils
 from collections import Iterable
-from keras.utils.np_utils import to_categorical
 
 try:
     import keras.backend as K
@@ -39,7 +98,7 @@ try:
     from keras.models import load_model
     from keras.losses import hinge
     from keras.models import Model
-    from keras.layers import Input, Embedding, Dot, Dense, Reshape, Dropout, Conv2D, Flatten
+    from keras.layers import Input, Embedding, Dot, Dense, Reshape, Dropout
     KERAS_AVAILABLE = True
 except ImportError:
     KERAS_AVAILABLE = False
@@ -47,7 +106,7 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 
-def _get_full_batch_iter(pair_list, batch_size, text_maxlen):
+def _get_full_batch_iter(pair_list, batch_size):
     """Provides all the data points int the format: X1, X2, y with
     alternate positive and negative examples of `batch_size` in a streamable format.
 
@@ -58,8 +117,6 @@ def _get_full_batch_iter(pair_list, batch_size, text_maxlen):
     batch_size : int
         half the size in which the generator will yield datapoints. The size is doubled since
         we include positive and negative examples.
-    text_maxlen : int
-        the maimum length that a document/query can take
 
     Yields
     -------
@@ -73,29 +130,21 @@ def _get_full_batch_iter(pair_list, batch_size, text_maxlen):
         0 : X2[i] is not relevant to X1[i]
     """
 
-    X1, X2, X1_len, X2_len, y = [], [], [], [], []
+    X1, X2, y = [], [], []
     while True:
+        j=0
         for i, (query, pos_doc, neg_doc) in enumerate(pair_list):
-            query, query_len = query
-            pos_doc, pos_doc_len = pos_doc
-            neg_doc, neg_doc_len = neg_doc
-
             X1.append(query)
-            X1_len.append(query_len)
             X2.append(pos_doc)
-            X2_len.append(pos_doc_len)
             y.append(1)
-
             X1.append(query)
-            X1_len.append(query_len)
             X2.append(neg_doc)
-            X2_len.append(neg_doc_len)
             y.append(0)
-
+            j+=1
             if i % batch_size == 0 and i != 0:
-                yield ({'query': np.array(X1), 'doc': np.array(X2),
-                    'dpool_index': DynamicMaxPooling.dynamic_pooling_index(X1_len, X2_len, text_maxlen, text_maxlen)}, np.array(y))
-                X1, X2, X1_len, X2_len, y = [], [], [], [], []
+                yield ({'query': np.array(X1), 'doc': np.array(X2)}, np.array(y))
+                X1, X2, y = [], [], []
+
 
 def _get_pair_list(queries, docs, labels, _make_indexed, is_iterable):
     """Yields a tuple with query document pairs in the format
@@ -144,7 +193,8 @@ def _get_pair_list(queries, docs, labels, _make_indexed, is_iterable):
                         for new_item in zip(doc, label):
                             if new_item[1] == 0:
                                 j+=1
-                                yield((_make_indexed(q), len(q)), (_make_indexed(item[0]), len(item[0])), (_make_indexed(new_item[0]), len(new_item[0])))
+                                yield(_make_indexed(q), _make_indexed(item[0]), _make_indexed(new_item[0]))
+            print("SAMPLA RE!!!!!!!!!!!!!!!!!!", j)
     else:
         for q, doc, label in zip(queries, docs, labels):
             doc, label = (list(t) for t in zip(*sorted(zip(doc, label), reverse=True)))
@@ -155,14 +205,14 @@ def _get_pair_list(queries, docs, labels, _make_indexed, is_iterable):
                             yield(_make_indexed(q), _make_indexed(item[0]), _make_indexed(new_item[0]))
 
 
-class MatchPyramid(utils.SaveLoad):
-    """Model for training a Similarity Learning Model using the MatchPyramid model.
+class DRMM_TKS(utils.SaveLoad):
+    """Model for training a Similarity Learning Model using the DRMM TKS model.
     You only have to provide sentences in the data as a list of words.
     """
 
     def __init__(self, queries=None, docs=None, labels=None, word_embedding=None,
                  text_maxlen=200, normalize_embeddings=True, epochs=10, unk_handle_method='random',
-                 validation_data=None, topk=50, target_mode='ranking', verbose=1, batch_size=20, steps_per_epoch=100):
+                 validation_data=None, topk=50, target_mode='ranking', verbose=1, batch_size=20, steps_per_epoch=20):
         """Initializes the model and trains it
 
         Parameters
@@ -401,18 +451,13 @@ class MatchPyramid(utils.SaveLoad):
 
         indexed_sent = []
         for word in sentence:
-            if word in self.word2index:
-                indexed_sent.append(self.word2index[word])
-            else:
-                indexed_sent.append(self.unk_word_index)
-
+            indexed_sent.append(self.word2index[word])
 
         if len(indexed_sent) > self.text_maxlen:
-            indexed_sent = indexed_sent[:self.text_maxlen]
-            #raise ValueError(
-             #   "text_maxlen: %d isn't big enough. Error at sentence of length %d."
-              #  "Sentence is %s" % (self.text_maxlen, len(sentence), sentence)
-            #)
+            raise ValueError(
+                "text_maxlen: %d isn't big enough. Error at sentence of length %d."
+                "Sentence is %s" % (self.text_maxlen, len(sentence), sentence)
+            )
         indexed_sent = indexed_sent + [self.pad_word_index] * (self.text_maxlen - len(indexed_sent))
         return indexed_sent
 
@@ -447,23 +492,18 @@ class MatchPyramid(utils.SaveLoad):
         """Yields batches of data to train for classification tasks"""
         while True:
             x1_batch, x2_batch, dupl_batch = [], [], []
-            x1_len, x2_len = [], []
             for x1, x2, d in zip(self.queries, self.docs, self.labels):
                 x1_batch.append(self._make_indexed(x1))
                 x2_batch.append(self._make_indexed(x2))
-                x1_len.append(len(x1))
-                x2_len.append(len(x2))
                 dupl_batch.append(to_categorical(d, 2))
 
                 if len(x1_batch) % batch_size == 0:
-                    yield ({'query': np.array(x1_batch), 'doc': np.array(x2_batch),
-                        'dpool_index': DynamicMaxPooling.dynamic_pooling_index(x1_len, x2_len, self.text_maxlen, self.text_maxlen)}, np.squeeze(np.array(dupl_batch)))
-                    x1_batch, x2_batch, dupl_batch, x1_len, x2_len = [], [], [], [], []
- 
+                    yield ({'query': np.array(x1_batch), 'doc': np.array(x2_batch)}, np.squeeze(np.array(dupl_batch)))
+                    x1_batch, x2_batch, dupl_batch = [], [], []
 
     def train(self, queries, docs, labels, word_embedding=None,
-              text_maxlen=40, normalize_embeddings=True, epochs=10, unk_handle_method='zero',
-              validation_data=None, topk=20, target_mode='ranking', verbose=1, batch_size=100, steps_per_epoch=325):
+              text_maxlen=200, normalize_embeddings=True, epochs=10, unk_handle_method='zero',
+              validation_data=None, topk=20, target_mode='ranking', verbose=1, batch_size=5, steps_per_epoch=900):
         """Trains a DRMM_TKS model using specified parameters
 
         This method is called from on model initialization if the data is provided.
@@ -495,25 +535,19 @@ class MatchPyramid(utils.SaveLoad):
         if self.needs_vocab_build:
             self.build_vocab(self.queries, self.docs, self.labels, self.word_embedding)
 
-        '''
-        is_iterable = False
-        if isinstance(self.queries, Iterable) and not isinstance(self.queries, list):
-            is_iterable = True
-            logger.info("Input is an iterable amd will be streamed")
-        '''
-        is_iterable = True
+        # is_iterable = False
+        # if isinstance(self.queries, Iterable) and not isinstance(self.queries, list):
+        #     is_iterable = True
+        #     logger.info("Input is an iterable amd will be streamed")
+        is_iterable = True  # it should always be an iterable. Setting to True for now.
+
+        if self.target_mode == 'ranking':
+            self.pair_list = self._get_pair_list(self.queries, self.docs, self.labels, self._make_indexed, is_iterable)    
+            train_generator = self._get_full_batch_iter(self.pair_list, 10)
+        elif self.target_mode == 'classification':
+            train_generator = self._get_classification_batch(self.batch_size)
 
 
-        self.pair_list = self._get_pair_list(self.queries, self.docs, self.labels, self._make_indexed, is_iterable)
-        if is_iterable:
-            if self.target_mode == 'ranking':
-                train_generator = self._get_full_batch_iter(self.pair_list, batch_size, self.text_maxlen)
-            elif self.target_mode == 'classification':
-                train_generator = self._get_classification_batch(self.batch_size)
-        else:
-            raise ValueError()
-            # X1_train, X2_train, y_train = self._get_full_batch()
-        
         if self.first_train:
             # The settings below should be set only once
             self.model = self._get_keras_model()
@@ -568,9 +602,8 @@ class MatchPyramid(utils.SaveLoad):
             self.first_train = False
 
         if is_iterable:
-            print('Fitting gen')
             self.model.fit_generator(train_generator, steps_per_epoch=self.steps_per_epoch, callbacks=val_callback,
-                                    epochs=self.epochs, shuffle=False, verbose=1)
+                                    epochs=self.epochs, shuffle=False)
         else:
             self.model.fit(x={"query": X1_train, "doc": X2_train}, y=y_train, batch_size=5,
                            verbose=self.verbose, epochs=self.epochs, shuffle=False, callbacks=val_callback)
@@ -578,7 +611,7 @@ class MatchPyramid(utils.SaveLoad):
     def _translate_user_data(self, data):
         """Translates given user data into an indexed format which the model understands.
         If a model is not in the vocabulary, it is assigned the `unk_word_index` which maps
-        to the unk vector decided by `unk_handle_method`    
+        to the unk vector decided by `unk_handle_method`
 
         Parameters
         ----------
@@ -597,7 +630,6 @@ class MatchPyramid(utils.SaveLoad):
         """
         translated_data = []
         n_skipped_words = 0
-
         for sentence in data:
             translated_sentence = []
             for word in sentence:
@@ -607,29 +639,19 @@ class MatchPyramid(utils.SaveLoad):
                     # If the key isn't there give it the zero word index
                     translated_sentence.append(self.unk_word_index)
                     n_skipped_words += 1
-
-            if len(translated_sentence) > self.text_maxlen:
-                translated_sentence = translated_sentence[:self.text_maxlen]
-            #raise ValueError(
-             #   "text_maxlen: %d isn't big enough. Error at sentence of length %d."
-              #  "Sentence is %s" % (self.text_maxlen, len(sentence), sentence)
-            #)
-            translated_sentence = translated_sentence + (self.text_maxlen - len(sentence)) * [self.pad_word_index]
-            # if str(np.array(translated_sentence).shape) != '(70,)':
-            #     print(np.array(translated_sentence))
-            #     print(np.array(translated_sentence).shape)
+            if len(sentence) > self.text_maxlen:
+                logger.info(
+                    "text_maxlen: %d isn't big enough. Error at sentence of length %d."
+                    "Sentence is %s", self.text_maxlen, len(sentence), str(sentence)
+                )
+            translated_sentence = translated_sentence + \
+                (self.text_maxlen - len(sentence)) * [self.pad_word_index]
             translated_data.append(np.array(translated_sentence))
 
         logger.info(
             "Found %d unknown words. Set them to unknown word index : %d", n_skipped_words, self.unk_word_index
         )
-
-        translated_data = np.array(translated_data)
-        print(translated_data)
-        print(translated_data.shape)
-        # translated_data = translated_data.reshape((translated_data.shape[0], self.text_maxlen))
-
-        return translated_data
+        return np.array(translated_data)
 
     def predict(self, queries, docs):
         """Predcits the similarity between a query-document pair
@@ -659,61 +681,24 @@ class MatchPyramid(utils.SaveLoad):
          [0.99258184]
          [0.9960481 ]]
         """
-        long_query_len = []
-        long_doc_len = []
+
         long_query_list = []
         long_doc_list = []
         for query, doc in zip(queries, docs):
             for d in doc:
                 long_query_list.append(query)
-                long_query_len.append(len(query))
                 long_doc_list.append(d)
-                long_doc_len.append(len(d))
 
         indexed_long_query_list = self._translate_user_data(long_query_list)
         indexed_long_doc_list = self._translate_user_data(long_doc_list)
 
-        predictions = self.model.predict(x={'query': indexed_long_query_list, 'doc': indexed_long_doc_list,
-            'dpool_index': DynamicMaxPooling.dynamic_pooling_index(long_query_len, long_doc_len, self.text_maxlen, self.text_maxlen)})
+        predictions = self.model.predict(x={'query': indexed_long_query_list, 'doc': indexed_long_doc_list})
 
         logger.info("Predictions in the format query, doc, similarity")
         for i, (q, d) in enumerate(zip(long_query_list, long_doc_list)):
             logger.info("%s\t%s\t%s", str(q), str(d), str(predictions[i][0]))
 
         return predictions
-  
-    def evaluate_classification(self, X1, X2, D, batch_size=20):
-        batch_size=20
-        num_correct = 0
-        num_total = 0
-        x1_batch, x2_batch, dupl_batch = [], [], []
-        test_X, test_Y = [], []
-        x1_len, x2_len = [], []
-        for x1, x2, d in zip(X1, X2, D):
-            x1_batch.append(self._make_indexed(x1))
-            x2_batch.append(self._make_indexed(x2))
-            x1_len.append(len(x1))
-            x2_len.append(len(x2))
-            dupl_batch.append(to_categorical(d, 2))
-
-            if len(x1_batch) % batch_size == 0:
-                test_X.append({'query': np.array(x1_batch), 'doc': np.array(x2_batch),
-                    'dpool_index': DynamicMaxPooling.dynamic_pooling_index(x1_len, x2_len, self.text_maxlen, self.text_maxlen)})
-                test_Y.append(np.squeeze(np.array(dupl_batch)))
-
-                for tx, ty in zip(test_X, test_Y):
-                    this_pred = self.model.predict(tx)
-                    print(this_pred)
-                    for pred_val, true_val in zip(this_pred, ty):
-                        print(pred_val, true_val)
-                        if np.argmax(pred_val) == np.argmax(true_val):
-                            num_correct += 1
-                        num_total += 1
-
-                x1_batch, x2_batch, dupl_batch, x1_len, x2_len = [], [], [], [], []
-                test_X, test_Y = [], []
-
-        print(num_correct, num_total, num_correct/num_total) 
 
     def evaluate(self, queries, docs, labels):
         """Evaluates the model and provides the results in terms of metrics (MAP, nDCG)
@@ -728,29 +713,21 @@ class MatchPyramid(utils.SaveLoad):
         labels : list of list of int
             The relevance of the document to the query. 1 = relevant, 0 = not relevant
         """
-        long_query_list = []
-        long_query_len = []
-
         long_doc_list = []
-        long_doc_len = []
-
         long_label_list = []
+        long_query_list = []
         doc_lens = []
-
         for query, doc, label in zip(queries, docs, labels):
+            i = 0
             for d, l in zip(doc, label):
                 long_query_list.append(query)
-                long_query_len.append(len(query))
                 long_doc_list.append(d)
-                long_doc_len.append(len(d))
                 long_label_list.append(l)
+                i += 1
             doc_lens.append(len(doc))
-
         indexed_long_query_list = self._translate_user_data(long_query_list)
         indexed_long_doc_list = self._translate_user_data(long_doc_list)
-
-        predictions = self.model.predict(x={'query': indexed_long_query_list, 'doc': indexed_long_doc_list,
-            'dpool_index': DynamicMaxPooling.dynamic_pooling_index(long_query_len, long_doc_len, self.text_maxlen, self.text_maxlen)})
+        predictions = self.model.predict(x={'query': indexed_long_query_list, 'doc': indexed_long_doc_list})
         Y_pred = []
         Y_true = []
         offset = 0
@@ -789,7 +766,7 @@ class MatchPyramid(utils.SaveLoad):
                             'ignore', ['model', '_get_pair_list', '_get_full_batch_iter',
                                         'queries', 'docs', 'labels', 'pair_list'])
         kwargs['fname_or_handle'] = fname
-        super(MatchPyramid, self).save(*args, **kwargs)
+        super(DRMM_TKS, self).save(*args, **kwargs)
         self.model.save(fname + ".keras")
 
     @classmethod
@@ -815,17 +792,29 @@ class MatchPyramid(utils.SaveLoad):
         >>> model = DRMM_TKS.load(model_file_path)
         """
         fname = args[0]
-        gensim_model = super(MatchPyramid, cls).load(*args, **kwargs)
+        gensim_model = super(DRMM_TKS, cls).load(*args, **kwargs)
         keras_model = load_model(
-            fname + '.keras', custom_objects={'rank_hinge_loss': rank_hinge_loss, 'DynamicMaxPooling': DynamicMaxPooling})
+            fname + '.keras', custom_objects={'TopKLayer': TopKLayer})
         gensim_model.model = keras_model
         gensim_model._get_pair_list = _get_pair_list
         gensim_model._get_full_batch_iter = _get_full_batch_iter
         return gensim_model
 
-    def _get_keras_model(self, embed_trainable=False, kernel_count=64, kernel_size=[3, 3], dpool_size=[3, 10],
-            dropout_rate=0.95):
-        """Builds and returns the keras class for matchpyramid model
+    def _get_keras_model(self, embed_trainable=False, dropout_rate=0.5, hidden_sizes=[100, 1]):
+        """Builds and returns the keras class for drmm tks model
+
+        About DRMM_TKS
+        --------------
+        This is a variant version of DRMM, which applied topk pooling in the matching matrix.
+        It has the following steps:
+        1. embed queries into embedding vector named 'q_embed' and 'd_embed' respectively
+        2. computing 'q_embed' and 'd_embed' with element-wise multiplication
+        3. computing output of upper layer with dense layer operation
+        4. take softmax operation on the output of this layer named 'g' and find the k largest entries named 'mm_k'.
+        5. input 'mm_k' into hidden layers, with specified length of layers and activation function
+        6. compute 'g' and 'mm_k' with element-wise multiplication.
+
+        On predicting, the model returns the score list between queries and documents.
 
         Parameters
         ----------
@@ -846,33 +835,40 @@ class MatchPyramid(utils.SaveLoad):
         if not KERAS_AVAILABLE:
             raise ImportError("Please install Keras to use this model")
 
+        n_layers = len(hidden_sizes)
+
         query = Input(name='query', shape=(self.text_maxlen,))
         doc = Input(name='doc', shape=(self.text_maxlen,))
+        embedding = Embedding(self.embedding_matrix.shape[0], self.embedding_dim,
+                              weights=[self.embedding_matrix], trainable=embed_trainable)
 
-        dpool_index = Input(name='dpool_index', shape=[self.text_maxlen, self.text_maxlen, 3], dtype='int32')
-
-        embedding = Embedding(self.embedding_matrix.shape[0], self.embedding_matrix.shape[1], weights=[self.embedding_matrix],
-            trainable = embed_trainable)
         q_embed = embedding(query)
         d_embed = embedding(doc)
 
-        cross = Dot(axes=[2, 2], normalize=False)([q_embed, d_embed])
-        cross_reshape = Reshape((self.text_maxlen, self.text_maxlen, 1))(cross)
+        mm = Dot(axes=[2, 2], normalize=True)([q_embed, d_embed])
 
-        conv2d = Conv2D(kernel_count, kernel_size, padding='same', activation='relu')
-        dpool = DynamicMaxPooling(dpool_size[0], dpool_size[1])
+        # compute term gating
+        w_g = Dense(1, activation='softmax')(q_embed)
+        g = Reshape((self.text_maxlen,))(w_g)
 
-        conv1 = conv2d(cross_reshape)
-        pool1 = dpool([conv1, dpool_index])
-        pool1_flat = Flatten()(pool1)
-        pool1_flat_drop = Dropout(rate=dropout_rate)(pool1_flat)
+        mm_k = TopKLayer(topk=self.topk, output_dim=(
+            self.text_maxlen, self.embedding_dim))(mm)
+
+        for i in range(n_layers):
+            mm_k = Dense(hidden_sizes[i], activation='softplus', kernel_initializer='he_uniform',
+                         bias_initializer='zeros')(mm_k)
+
+        mm_k_dropout = Dropout(rate=dropout_rate)(mm_k)
+
+        mm_reshape = Reshape(
+            (self.text_maxlen,))(mm_k_dropout)
+
+        mean = Dot(axes=[1, 1])([mm_reshape, g])
 
         if self.target_mode == 'classification':
-            out_ = Dense(2, activation='softmax')(pool1_flat_drop)
+            out_ = Dense(2, activation='softmax')(mean)
         elif self.target_mode in ['regression', 'ranking']:
-            out_ = Dense(200)(pool1_flat_drop)
-            out_ = Dense(64)(out_)
-            out_ = Dense(1)(out_)
+            out_ = Reshape((1,))(mean)
 
-        model = Model(inputs=[query, doc, dpool_index], outputs=out_)
+        model = Model(inputs=[query, doc], outputs=out_)
         return model
