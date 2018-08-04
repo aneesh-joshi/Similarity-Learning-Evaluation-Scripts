@@ -58,4 +58,4 @@ text_maxlen = 200
 n_epochs = 10 
 dtks_model = DRMM_TKS(queries=train_q1, docs=train_q2, labels=train_duplicate, target_mode='classification',
                      word_embedding=kv_model, epochs=n_epochs, text_maxlen=text_maxlen, batch_size=batch_size, steps_per_epoch=323432//batch_size)
-dtks_model.evaluate_classification(test_q1, test_q2, test_duplicate)
+dtks_model.evaluate_classification(test_q1, test_q2, test_duplicate, batch_size=20)
