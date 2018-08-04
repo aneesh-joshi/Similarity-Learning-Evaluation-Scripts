@@ -1,6 +1,9 @@
+import sys
+sys.path.append('..')
+
 from gensim import downloader as api
 from sklearn.utils import shuffle
-from matchpyramid import MatchPyramid
+from sl_eval.models.matchpyramid import MatchPyramid
 import re
 
 train_split = 0.8
