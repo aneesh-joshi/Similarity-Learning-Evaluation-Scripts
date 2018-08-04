@@ -1,4 +1,6 @@
 import sys
+sys.path.append('../..')
+import sys
 import os
 import csv
 import re
@@ -78,17 +80,17 @@ class MyWikiIterable:
                     n_filtered_docs += 1
                     n_relevant_docs = 0
 
-q_iterable = MyWikiIterable('query', os.path.join('experimental_data', 'WikiQACorpus', 'WikiQA-train.tsv'))
-d_iterable = MyWikiIterable('doc', os.path.join('experimental_data', 'WikiQACorpus', 'WikiQA-train.tsv'))
-l_iterable = MyWikiIterable('label', os.path.join('experimental_data', 'WikiQACorpus', 'WikiQA-train.tsv'))
+q_iterable = MyWikiIterable('query', os.path.join('..', '..', 'data', 'WikiQACorpus', 'WikiQA-train.tsv'))
+d_iterable = MyWikiIterable('doc', os.path.join('..', '..', 'data', 'WikiQACorpus', 'WikiQA-train.tsv'))
+l_iterable = MyWikiIterable('label', os.path.join('..', '..', 'data', 'WikiQACorpus', 'WikiQA-train.tsv'))
 
-q_val_iterable = MyWikiIterable('query', os.path.join( 'experimental_data', 'WikiQACorpus', 'WikiQA-dev.tsv'))
-d_val_iterable = MyWikiIterable('doc', os.path.join('experimental_data', 'WikiQACorpus', 'WikiQA-dev.tsv'))
-l_val_iterable = MyWikiIterable('label', os.path.join('experimental_data', 'WikiQACorpus', 'WikiQA-dev.tsv'))
+q_val_iterable = MyWikiIterable('query', os.path.join('..', '..',  'data', 'WikiQACorpus', 'WikiQA-dev.tsv'))
+d_val_iterable = MyWikiIterable('doc', os.path.join('..', '..', 'data', 'WikiQACorpus', 'WikiQA-dev.tsv'))
+l_val_iterable = MyWikiIterable('label', os.path.join('..', '..', 'data', 'WikiQACorpus', 'WikiQA-dev.tsv'))
 
-q_test_iterable = MyWikiIterable('query', os.path.join( 'experimental_data', 'WikiQACorpus', 'WikiQA-test.tsv'))
-d_test_iterable = MyWikiIterable('doc', os.path.join('experimental_data', 'WikiQACorpus', 'WikiQA-test.tsv'))
-l_test_iterable = MyWikiIterable('label', os.path.join('experimental_data', 'WikiQACorpus', 'WikiQA-test.tsv'))
+q_test_iterable = MyWikiIterable('query', os.path.join('..', '..',  'data', 'WikiQACorpus', 'WikiQA-test.tsv'))
+d_test_iterable = MyWikiIterable('doc', os.path.join('..', '..', 'data', 'WikiQACorpus', 'WikiQA-test.tsv'))
+l_test_iterable = MyWikiIterable('label', os.path.join('..', '..', 'data', 'WikiQACorpus', 'WikiQA-test.tsv'))
 
 
 kv_model = api.load('glove-wiki-gigaword-300')
@@ -100,5 +102,5 @@ mp_model = MatchPyramid(
 
 print('Test set results')
 mp_model.evaluate(q_test_iterable, d_test_iterable, l_test_iterable)
-
-mp_model.save('my_mp_mpdel')
+model_save_path = 'saved_models'
+mp_model.save(os.path.join(model_save_path, 'my_mp_mpdel'))
