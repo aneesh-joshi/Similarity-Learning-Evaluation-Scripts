@@ -24,10 +24,10 @@ import hashlib
 from numpy import random as np_random
 from gensim.models import KeyedVectors
 from collections import Counter
-from custom_losses import rank_hinge_loss
-from custom_layers import TopKLayer, DynamicMaxPooling
-from custom_callbacks import ValidationCallback
-from evaluation_metrics import mapk, mean_ndcg
+from .utils.custom_losses import rank_hinge_loss
+from .utils.custom_layers import TopKLayer, DynamicMaxPooling
+from .utils.custom_callbacks import ValidationCallback
+from .utils.evaluation_metrics import mapk, mean_ndcg
 from sklearn.preprocessing import normalize
 from gensim import utils
 from collections import Iterable
