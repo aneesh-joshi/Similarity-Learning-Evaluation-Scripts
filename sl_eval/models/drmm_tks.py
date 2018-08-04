@@ -290,10 +290,14 @@ class DRMM_TKS(utils.SaveLoad):
         self._get_pair_list = _get_pair_list
         self._get_full_batch_iter = _get_full_batch_iter
 
-        if self.target_mode not in ['ranking', 'classification']:
+        if self.target_mode not in ['ranking', 'classification', 'inference']:
             raise ValueError(
-                "Unkown target_mode %s. It must be either 'ranking' or 'classification'" % self.target_mode
+                "Unkown target_mode %s. It must be either 'ranking' or 'classification' or 'inference' " % self.target_mode
             )
+
+        if self.target_mode == 'inference':
+            self.num_inferences = len(self.labels[0])
+            logger.info('Inference mode with %d labels' % self.num_inferences)
 
         if unk_handle_method not in ['random', 'zero']:
             raise ValueError("Unkown token handling method %s" % str(unk_handle_method))
@@ -316,7 +320,7 @@ class DRMM_TKS(utils.SaveLoad):
         for q in self.queries:
             self.word_counter.update(q)
 
-        if self.target_mode == 'classification':
+        if self.target_mode in ['classification', 'inference']:
             for doc in self.docs:
                 self.word_counter.update(doc)
         else:
@@ -505,6 +509,19 @@ class DRMM_TKS(utils.SaveLoad):
                     yield ({'query': np.array(x1_batch), 'doc': np.array(x2_batch)}, np.squeeze(np.array(dupl_batch)))
                     x1_batch, x2_batch, dupl_batch = [], [], []
 
+    def _get_inference_batch(self, batch_size):
+        """Yields batches of data to train for inference tasks"""
+        while True:
+            x1_batch, x2_batch, dupl_batch = [], [], []
+            for x1, x2, d in zip(self.queries, self.docs, self.labels):
+                x1_batch.append(self._make_indexed(x1))
+                x2_batch.append(self._make_indexed(x2))
+                dupl_batch.append(to_categorical(d, self.num_inferences))
+
+                if len(x1_batch) % batch_size == 0:
+                    yield ({'query': np.array(x1_batch), 'doc': np.array(x2_batch)}, np.squeeze(np.array(dupl_batch)))
+                    x1_batch, x2_batch, dupl_batch = [], [], []
+
     def train(self, queries, docs, labels, word_embedding=None,
               text_maxlen=200, normalize_embeddings=True, epochs=10, unk_handle_method='zero',
               validation_data=None, topk=20, target_mode='ranking', verbose=1, batch_size=5, steps_per_epoch=900):
@@ -550,6 +567,10 @@ class DRMM_TKS(utils.SaveLoad):
             train_generator = self._get_full_batch_iter(self.pair_list, 10)
         elif self.target_mode == 'classification':
             train_generator = self._get_classification_batch(self.batch_size)
+        elif self.target_mode == 'inference':
+            train_generator = self._get_inference_batch(self.batch_size)
+        else:
+            ValueError('Unkown target mode %s' % str(self.target_mode))
 
 
         if self.first_train:
@@ -566,6 +587,9 @@ class DRMM_TKS(utils.SaveLoad):
             loss = 'mse'
             loss = rank_hinge_loss
             if self.target_mode == 'classification':
+                loss = 'categorical_crossentropy'
+                optimizer = 'adam'
+            elif self.target_mode == 'inference':
                 loss = 'categorical_crossentropy'
                 optimizer = 'adam'
             self.model.compile(optimizer=optimizer, loss=loss, metrics=['accuracy'])
@@ -880,7 +904,6 @@ class DRMM_TKS(utils.SaveLoad):
         return model
 
     def evaluate_classification(self, X1, X2, D, batch_size=20):
-        batch_size=20
         num_correct = 0
         num_total = 0
         x1_batch, x2_batch, dupl_batch = [], [], []
@@ -889,6 +912,34 @@ class DRMM_TKS(utils.SaveLoad):
             x1_batch.append(self._make_indexed(x1))
             x2_batch.append(self._make_indexed(x2))
             dupl_batch.append(to_categorical(d, 2))
+
+            if len(x1_batch) % batch_size == 0:
+                test_X.append({'query': np.array(x1_batch), 'doc': np.array(x2_batch)})
+                test_Y.append(np.squeeze(np.array(dupl_batch)))
+
+                for tx, ty in zip(test_X, test_Y):
+                    this_pred = self.model.predict(tx)
+                    print(this_pred)
+                    for pred_val, true_val in zip(this_pred, ty):
+                        print(pred_val, true_val)
+                        if np.argmax(pred_val) == np.argmax(true_val):
+                            num_correct += 1
+                        num_total += 1
+
+                x1_batch, x2_batch, dupl_batch, x1_len, x2_len = [], [], [], [], []
+                test_X, test_Y = [], []
+
+        print(num_correct, num_total, num_correct/num_total) 
+
+    def evaluate_inference(self, X1, X2, D, batch_size=20):
+        num_correct = 0
+        num_total = 0
+        x1_batch, x2_batch, dupl_batch = [], [], []
+        test_X, test_Y = [], []
+        for x1, x2, d in zip(X1, X2, D):
+            x1_batch.append(self._make_indexed(x1))
+            x2_batch.append(self._make_indexed(x2))
+            dupl_batch.append(to_categorical(d, self.num_inferences))
 
             if len(x1_batch) % batch_size == 0:
                 test_X.append({'query': np.array(x1_batch), 'doc': np.array(x2_batch)})
