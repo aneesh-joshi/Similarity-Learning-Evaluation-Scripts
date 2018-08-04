@@ -27,7 +27,7 @@ l_test_iterable = MyWikiIterable('label', os.path.join(wikiqa_folder, 'WikiQA-te
 
 kv_model = api.load('glove-wiki-gigaword-300')
 
-n_epochs = 10
+n_epochs = 2
 batch_size = 10
 steps_per_epoch = 9000 // batch_size
 

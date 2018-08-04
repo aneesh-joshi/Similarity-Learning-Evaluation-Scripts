@@ -212,7 +212,8 @@ class DRMM_TKS(utils.SaveLoad):
 
     def __init__(self, queries=None, docs=None, labels=None, word_embedding=None,
                  text_maxlen=200, normalize_embeddings=True, epochs=10, unk_handle_method='random',
-                 validation_data=None, topk=50, target_mode='ranking', verbose=1, batch_size=20, steps_per_epoch=20):
+                 validation_data=None, topk=50, target_mode='ranking', verbose=1, batch_size=20, steps_per_epoch=20,
+                 num_inferences=3):
         """Initializes the model and trains it
 
         Parameters
@@ -296,7 +297,7 @@ class DRMM_TKS(utils.SaveLoad):
             )
 
         if self.target_mode == 'inference':
-            self.num_inferences = len(self.labels[0])
+            self.num_inferences = num_inferences
             logger.info('Inference mode with %d labels' % self.num_inferences)
 
         if unk_handle_method not in ['random', 'zero']:
@@ -823,7 +824,7 @@ class DRMM_TKS(utils.SaveLoad):
         fname = args[0]
         gensim_model = super(DRMM_TKS, cls).load(*args, **kwargs)
         keras_model = load_model(
-            fname + '.keras', custom_objects={'TopKLayer': TopKLayer})
+            fname + '.keras', custom_objects={'TopKLayer': TopKLayer, 'rank_hinge_loss': rank_hinge_loss})
         gensim_model.model = keras_model
         gensim_model._get_pair_list = _get_pair_list
         gensim_model._get_full_batch_iter = _get_full_batch_iter
@@ -899,6 +900,8 @@ class DRMM_TKS(utils.SaveLoad):
             out_ = Dense(2, activation='softmax')(mean)
         elif self.target_mode in ['regression', 'ranking']:
             out_ = Reshape((1,))(mean)
+        elif self.target_mode == 'inference':
+            out_ = Dense(self.num_inferences, activation='softmax')(mean)
 
         model = Model(inputs=[query, doc], outputs=out_)
         return model
