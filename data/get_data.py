@@ -29,6 +29,7 @@ quoraqp_url, quoraqp_file = "http://qim.ec.quoracdn.net/", "quora_duplicate_ques
 glove_url, glove_file = "https://nlp.stanford.edu/data/", "glove.6B.zip"
 snli_url, snli_file = "https://nlp.stanford.edu/projects/snli/", "snli_1.0.zip"
 InsuranceQA_git_link = "https://github.com/codekansas/insurance_qa_python.git"
+SICK_link = "http://clic.cimec.unitn.it/composes/materials/SICK.zip"
 def download(url, file_name, output_dir, unzip=False):
     """Utility function to download a given file from the given url
     Paramters:
