@@ -235,14 +235,14 @@ class MatchPyramid(utils.SaveLoad):
         self.needs_vocab_build = True
         self.batch_size = batch_size
         self.steps_per_epoch = steps_per_epoch
-
+        self.num_inferences = num_inferences
 
         # These functions have been defined outside the class and set as attributes here
         # so that they can be ignored when saving the model to file
         self._get_pair_list = _get_pair_list
         self._get_full_batch_iter = _get_full_batch_iter
 
-        if self.target_mode not in ['ranking', 'classification']:
+        if self.target_mode not in ['ranking', 'classification', 'inference']:
             raise ValueError(
                 "Unkown target_mode %s. It must be either 'ranking' or 'classification'" % self.target_mode
             )
@@ -463,17 +463,21 @@ class MatchPyramid(utils.SaveLoad):
                     x1_batch, x2_batch, dupl_batch, x1_len, x2_len = [], [], [], [], []
 
     def _get_inference_batch(self, batch_size):
-        """Yields batches of data to train for inference tasks"""
+        """Yields batches of data to train for classification tasks"""
         while True:
             x1_batch, x2_batch, dupl_batch = [], [], []
+            x1_len, x2_len = [], []
             for x1, x2, d in zip(self.queries, self.docs, self.labels):
                 x1_batch.append(self._make_indexed(x1))
                 x2_batch.append(self._make_indexed(x2))
+                x1_len.append(len(x1))
+                x2_len.append(len(x2))
                 dupl_batch.append(to_categorical(d, self.num_inferences))
 
                 if len(x1_batch) % batch_size == 0:
-                    yield ({'query': np.array(x1_batch), 'doc': np.array(x2_batch)}, np.squeeze(np.array(dupl_batch)))
-                    x1_batch, x2_batch, dupl_batch = [], [], []
+                    yield ({'query': np.array(x1_batch), 'doc': np.array(x2_batch),
+                        'dpool_index': DynamicMaxPooling.dynamic_pooling_index(x1_len, x2_len, self.text_maxlen, self.text_maxlen)}, np.squeeze(np.array(dupl_batch)))
+                    x1_batch, x2_batch, dupl_batch, x1_len, x2_len = [], [], [], [], []
 
 
     def train(self, queries, docs, labels, word_embedding=None,
@@ -545,6 +549,8 @@ class MatchPyramid(utils.SaveLoad):
             loss = 'mse'
             loss = rank_hinge_loss
             if self.target_mode == 'classification':
+                loss = 'categorical_crossentropy'
+            elif self.target_mode == 'inference':
                 loss = 'categorical_crossentropy'
             self.model.compile(optimizer=optimizer, loss=loss, metrics=['accuracy'])
         else:
@@ -892,22 +898,31 @@ class MatchPyramid(utils.SaveLoad):
             out_ = Dense(200, activation='relu')(pool1_flat_drop)
             out_ = Dense(64, activation='relu')(out_)
             out_ = Dense(1)(out_)
+        elif self.target_mode == 'inference':
+            out_ = Dense(200, activation='relu')(pool1_flat_drop)
+            out_ = Dense(64, activation='relu')(out_)
+            out_ = Dense(self.num_inferences, activation='softmax')(pool1_flat_drop)
 
         model = Model(inputs=[query, doc, dpool_index], outputs=out_)
         return model
 
     def evaluate_inference(self, X1, X2, D, batch_size=20):
+        batch_size=20
         num_correct = 0
         num_total = 0
         x1_batch, x2_batch, dupl_batch = [], [], []
         test_X, test_Y = [], []
+        x1_len, x2_len = [], []
         for x1, x2, d in zip(X1, X2, D):
             x1_batch.append(self._make_indexed(x1))
             x2_batch.append(self._make_indexed(x2))
+            x1_len.append(len(x1))
+            x2_len.append(len(x2))
             dupl_batch.append(to_categorical(d, self.num_inferences))
 
             if len(x1_batch) % batch_size == 0:
-                test_X.append({'query': np.array(x1_batch), 'doc': np.array(x2_batch)})
+                test_X.append({'query': np.array(x1_batch), 'doc': np.array(x2_batch),
+                    'dpool_index': DynamicMaxPooling.dynamic_pooling_index(x1_len, x2_len, self.text_maxlen, self.text_maxlen)})
                 test_Y.append(np.squeeze(np.array(dupl_batch)))
 
                 for tx, ty in zip(test_X, test_Y):
@@ -923,3 +938,4 @@ class MatchPyramid(utils.SaveLoad):
                 test_X, test_Y = [], []
 
         print(num_correct, num_total, num_correct/num_total) 
+
