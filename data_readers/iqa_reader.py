@@ -81,6 +81,7 @@ class IQAReader:
                 batch_a.append(self._get_pool_answer(item['good']))
                 batch_doc_ids.append('D{}-{}'.format(i, j))
                 batch_l.append(0)
+            batch_a, batch_doc_ids, batch_l = shuffle(batch_a, batch_doc_ids, batch_l)
             doc_ids.append(batch_doc_ids)
             answers.append(batch_a)
             labels.append(batch_l)
