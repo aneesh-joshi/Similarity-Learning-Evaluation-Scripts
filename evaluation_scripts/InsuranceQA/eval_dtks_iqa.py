@@ -4,7 +4,7 @@ sys.path.append('../..')
 from sklearn.utils import shuffle
 from data_readers import IQAReader
 import gensim.downloader as api
-from sl_eval.models.matchpyramid import MatchPyramid
+from sl_eval.models import DRMM_TKS
 
 def save_qrels(fname):
     """Saves the WikiQA data `Truth Data`. This remains the same regardless of which model you use.
@@ -85,7 +85,7 @@ def save_model_pred(fname, similarity_fn):
     print("Prediction done. Saved as %s" % fname)
 
 
-def mp_similarity_fn(q, d):
+def dtks_similarity_fn(q, d):
     """Similarity Function for DRMM TKS
 
     Parameters
@@ -97,7 +97,7 @@ def mp_similarity_fn(q, d):
     -------
     similarity_score : float
     """
-    return mp_model.predict([q], [[d]])[0][0]
+    return dtks_model.predict([q], [[d]])[0][0]
 
 iqa_folder_path = os.path.join('..', '..', 'data', 'insurance_qa_python')
 iqa_reader = IQAReader(iqa_folder_path)
@@ -108,7 +108,7 @@ train_batch_size = 50
 test_batch_size = 10
 word_embedding_len = 300
 batch_size = 50
-text_maxlen = 200
+text_maxlen = 300
 n_epochs = 5 
 # --------------------------------------------------------------------
 
@@ -118,19 +118,17 @@ train_q, train_d, train_l = shuffle(train_q, train_d, train_l)
 
 kv_model = api.load('glove-wiki-gigaword-' + str(word_embedding_len))
 steps_per_epoch = len(train_q)//batch_size
-mp_model = MatchPyramid(queries=train_q, docs=train_d, labels=train_l, target_mode='ranking',
+dtks_model = DRMM_TKS(queries=train_q, docs=train_d, labels=train_l, target_mode='ranking',
                       word_embedding=kv_model, epochs=n_epochs, text_maxlen=text_maxlen, batch_size=batch_size,
                       steps_per_epoch=steps_per_epoch)
 
-# mp_model.save(os.path.join('saved_models', 'mp_model' ))
-
 queries, doc_group, label_group, query_ids, doc_id_group = iqa_reader.get_test_data('test1', batch_size=test_batch_size)
-save_qrels('qrels1')
-save_model_pred('pred_mp_iqa1', mp_similarity_fn)
+save_qrels('qrels1_dtks')
+save_model_pred('pred1_dtks_iqa', dtks_similarity_fn)
 
 queries, doc_group, label_group, query_ids, doc_id_group = iqa_reader.get_test_data('test2', batch_size=test_batch_size)
-save_qrels('qrels2')
-save_model_pred('pred_mp_iqa2', mp_similarity_fn)
+save_qrels('qrels2_dtks')
+save_model_pred('pred2_dtks_iqa', dtks_similarity_fn)
 
 
 # for q, doc, label, qid, dids in zip(queries, doc_group, label_group, query_ids, doc_id_group):

@@ -565,7 +565,7 @@ class DRMM_TKS(utils.SaveLoad):
 
         if self.target_mode == 'ranking':
             self.pair_list = self._get_pair_list(self.queries, self.docs, self.labels, self._make_indexed, is_iterable)    
-            train_generator = self._get_full_batch_iter(self.pair_list, 10)
+            train_generator = self._get_full_batch_iter(self.pair_list, self.batch_size)
         elif self.target_mode == 'classification':
             train_generator = self._get_classification_batch(self.batch_size)
         elif self.target_mode == 'inference':
@@ -669,11 +669,12 @@ class DRMM_TKS(utils.SaveLoad):
                     # If the key isn't there give it the zero word index
                     translated_sentence.append(self.unk_word_index)
                     n_skipped_words += 1
-            if len(sentence) > self.text_maxlen:
-                logger.info(
+            if len(translated_sentence) > self.text_maxlen:
+                '''logger.info(
                     "text_maxlen: %d isn't big enough. Error at sentence of length %d."
-                    "Sentence is %s", self.text_maxlen, len(sentence), str(sentence)
-                )
+                    "Sentence is %s. Clipping it for now", self.text_maxlen, len(sentence), str(sentence)
+                )'''
+                translated_sentence = translated_sentence[:self.text_maxlen]
             translated_sentence = translated_sentence + \
                 (self.text_maxlen - len(sentence)) * [self.pad_word_index]
             translated_data.append(np.array(translated_sentence))
