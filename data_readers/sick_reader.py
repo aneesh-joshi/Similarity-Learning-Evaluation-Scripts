@@ -29,10 +29,6 @@ class SickReader:
                 self.entailment_label[split_line[SPLIT_INDEX]].append(self.entailment_label2index[split_line[ENTAILMENT_INDEX]])
                 self.relatedness_score[split_line[SPLIT_INDEX]].append(float(split_line[RELATEDNESS_INDEX])) 
 
-        print(len(self.sentenceA['TRAIN']))
-        print(len(self.sentenceB['TEST']))
-        print(len(self.sentenceB['TRIAL']))
-
     def _preprocess_fn(self, sent):
         """Utility function to lower, strip and tokenize each sentence(on spaces)
 
