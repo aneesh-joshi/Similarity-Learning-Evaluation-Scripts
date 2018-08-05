@@ -42,11 +42,12 @@ class IQAReader:
                 batch_a.append(self._get_answer(answer_id))
                 batch_l.append(1)
             if len(batch_a) > batch_size:
+                print(item['answers'])
                 raise ValueError(
                             "The number of correct answers: %d is bigger than the batch_size: %d"
                             "Consider increasing the batch_size" % (len(batch_a), batch_size)
                         )
-            while(len(batch_a) < self.batch_size):
+            while(len(batch_a) < batch_size):
                 batch_a.append(self._get_pool_answer(item['answers']))
                 batch_l.append(0)
 
