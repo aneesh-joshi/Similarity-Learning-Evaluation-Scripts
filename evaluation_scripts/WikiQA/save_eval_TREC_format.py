@@ -309,20 +309,6 @@ if __name__ == '__main__':
 
     # Get the qrels, which will be the same for every model
     save_qrels('qrels')
-
-    if False:
-        # Get data KeyedVector model
-        temp_kv_model = api.load('glove-wiki-gigaword-' + str(w2v_dim))
-        dim_size = temp_kv_model.vector_size
-        kv_model = temp_kv_model.wv
-        del temp_kv_model
-
-        # Get the prediction in the correct format for word2vec
-        save_model_pred('pred_w2v_' + str(w2v_dim), w2v_similarity_fn)
-
-        # Evaluate DRMM_TKS
-        del kv_model
-
     if model_type == 'dtks':
         dtks_model = DRMM_TKS.load(model_path)
         save_model_pred(str(model_path) + 'pred', dtks_similarity_fn)
