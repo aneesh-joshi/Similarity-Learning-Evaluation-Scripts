@@ -66,21 +66,27 @@ class IQAReader:
         """
         testx = self._get_pickle(split)
         batch_a, batch_l = [], []
-        questions, answers, labels = [], [], []
+        questions, answers, labels, question_ids, doc_ids = [], [], [], [], []
+        question_ids, batch_doc_ids = [], []
 
-        for item in testx:
+        for i, item in enumerate(testx):
             questions.append(self._translate_sent(item['question']))
-            for answer_id in item['good']:
+            question_ids.append('Q-{}'.format(i))
+            for j, answer_id in enumerate(item['good']):
                 batch_a.append(self._get_answer(answer_id))
+                batch_doc_ids.append('D{}-{}'.format(i, j))
                 batch_l.append(1)
             while(len(batch_a) < batch_size):
+                j += 1
                 batch_a.append(self._get_pool_answer(item['good']))
+                batch_doc_ids.append('D{}-{}'.format(i, j))
                 batch_l.append(0)
+            doc_ids.append(batch_doc_ids)
             answers.append(batch_a)
             labels.append(batch_l)
-            batch_a, batch_l = [], []
+            batch_a, batch_l, batch_doc_ids = [], [], []
 
-        return questions, answers, labels
+        return questions, answers, labels, question_ids, doc_ids
 
 if __name__ == '__main__':
     iqa_reader = InsuranceQAReader(pool_size=32)
