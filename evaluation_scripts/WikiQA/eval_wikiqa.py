@@ -3,7 +3,7 @@ sys.path.append('../..')
 import sys
 import os
 
-from sl_eval.models import MatchPyramid, DRMM_TKS
+from sl_eval.models import MatchPyramid, DRMM_TKS, BiDAF_T
 from data_readers import WikiReaderIterable, WikiReaderStatic
 import gensim.downloader as api
 
@@ -117,62 +117,85 @@ def mp_similarity_fn(q, d):
 
 
 if __name__ == '__main__':
-	wikiqa_folder = os.path.join('..', '..', 'data', 'WikiQACorpus')
+    wikiqa_folder = os.path.join('..', '..', 'data', 'WikiQACorpus')
 
-	q_iterable = WikiReaderIterable('query', os.path.join(wikiqa_folder, 'WikiQA-train.tsv'))
-	d_iterable = WikiReaderIterable('doc', os.path.join(wikiqa_folder, 'WikiQA-train.tsv'))
-	l_iterable = WikiReaderIterable('label', os.path.join(wikiqa_folder, 'WikiQA-train.tsv'))
+    q_iterable = WikiReaderIterable('query', os.path.join(wikiqa_folder, 'WikiQA-train.tsv'))
+    d_iterable = WikiReaderIterable('doc', os.path.join(wikiqa_folder, 'WikiQA-train.tsv'))
+    l_iterable = WikiReaderIterable('label', os.path.join(wikiqa_folder, 'WikiQA-train.tsv'))
 
-	q_val_iterable = WikiReaderIterable('query', os.path.join(wikiqa_folder, 'WikiQA-dev.tsv'))
-	d_val_iterable = WikiReaderIterable('doc', os.path.join(wikiqa_folder, 'WikiQA-dev.tsv'))
-	l_val_iterable = WikiReaderIterable('label', os.path.join(wikiqa_folder, 'WikiQA-dev.tsv'))
+    q_val_iterable = WikiReaderIterable('query', os.path.join(wikiqa_folder, 'WikiQA-dev.tsv'))
+    d_val_iterable = WikiReaderIterable('doc', os.path.join(wikiqa_folder, 'WikiQA-dev.tsv'))
+    l_val_iterable = WikiReaderIterable('label', os.path.join(wikiqa_folder, 'WikiQA-dev.tsv'))
 
-	q_test_iterable = WikiReaderIterable('query', os.path.join(wikiqa_folder, 'WikiQA-test.tsv'))
-	d_test_iterable = WikiReaderIterable('doc', os.path.join(wikiqa_folder, 'WikiQA-test.tsv'))
-	l_test_iterable = WikiReaderIterable('label', os.path.join(wikiqa_folder, 'WikiQA-test.tsv'))
+    q_test_iterable = WikiReaderIterable('query', os.path.join(wikiqa_folder, 'WikiQA-test.tsv'))
+    d_test_iterable = WikiReaderIterable('doc', os.path.join(wikiqa_folder, 'WikiQA-test.tsv'))
+    l_test_iterable = WikiReaderIterable('label', os.path.join(wikiqa_folder, 'WikiQA-test.tsv'))
 
-	test_data = WikiReaderStatic(os.path.join(wikiqa_folder, 'WikiQA-test.tsv')).get_data()
+    test_data = WikiReaderStatic(os.path.join(wikiqa_folder, 'WikiQA-test.tsv')).get_data()
 
-	num_samples = 9000
-	num_embedding_dims = 300
-	qrels_save_path = 'qrels_wikiqa'
-	mp_pred_save_path = 'pred_mp_wikiqa'
-	dtks_pred_save_path = 'pred_dtks_wikiqa'
-	
-	print('Saving qrels for WikiQA test data')
-	save_qrels(test_data, qrels_save_path)
+    num_samples = 9000
+    num_embedding_dims = 300
+    qrels_save_path = 'qrels_wikiqa'
+    mp_pred_save_path = 'pred_mp_wikiqa'
+    dtks_pred_save_path = 'pred_dtks_wikiqa'
+    bidaf_t_pred_save_path = 'pred_bidaf_t_wikiqa'
+    
+    print('Saving qrels for WikiQA test data')
+    save_qrels(test_data, qrels_save_path)
 
-	kv_model = api.load('glove-wiki-gigaword-' + str(num_embedding_dims))
+    kv_model = api.load('glove-wiki-gigaword-' + str(num_embedding_dims))
 
-	n_epochs = 6
-	batch_size = 10
-	steps_per_epoch = num_samples // batch_size
-	#steps_per_epoch = 1
 
-	# Train the model
-	mp_model = MatchPyramid(
-	                    queries=q_iterable, docs=d_iterable, labels=l_iterable, word_embedding=kv_model,
-	                    epochs=n_epochs, steps_per_epoch=steps_per_epoch, batch_size=batch_size, text_maxlen=200
-	                )
+    bidaf_model = BiDAF_T(q_iterable, d_iterable, l_iterable, kv_model, n_epochs=1, )
+    i=0
+    with open(bidaf_t_pred_save_path, 'w') as f:
+        for q, doc, labels, q_id, d_ids in zip(queries, doc_group, label_group, query_ids, doc_id_group):
+            batch_score = new_batch_tiny_predict(model, q, doc)
+            for d, l, d_id, bscore in zip(doc, labels, d_ids, batch_score):
+                #print(bscore)
+                my_score = bscore[1]
+                print(i, my_score)
+                i += 1
+                f.write(q_id + '\t' + 'Q0' + '\t' + str(d_id) + '\t' + '99' + '\t' + str(my_score) + '\t' + 'STANDARD' + '\n')
+    print("Prediction done. Saved as %s" % 'jpred')
 
-	print('Test set results')
-	mp_model.evaluate(q_test_iterable, d_test_iterable, l_test_iterable)
+    with open('qrels', 'w') as f:
+        for q, doc, labels, q_id, d_ids in zip(queries, doc_group, label_group, query_ids, doc_id_group):
+            for d, l, d_id in zip(doc, labels, d_ids):
+                f.write(q_id + '\t' +  '0' + '\t' +  str(d_id) + '\t' + str(l) + '\n')
+    print("qrels done. Saved as %s" % 'qrels')
 
-	print('Saving prediction on test data in TREC format')
-	save_model_pred(test_data, mp_pred_save_path, mp_similarity_fn)
+    exit()
 
-	batch_size = 10
-	steps_per_epoch = num_samples // batch_size
+    n_epochs = 2
+    batch_size = 10
+    steps_per_epoch = num_samples // batch_size
+    #steps_per_epoch = 1
 
-	# Train the model
-	drmm_tks_model = DRMM_TKS(
-	                    queries=q_iterable, docs=d_iterable, labels=l_iterable, word_embedding=kv_model, epochs=3,
-	                    topk=20, steps_per_epoch=steps_per_epoch, batch_size=batch_size
-	                )
+    # Train the model
+    mp_model = MatchPyramid(
+                        queries=q_iterable, docs=d_iterable, labels=l_iterable, word_embedding=kv_model,
+                        epochs=n_epochs, steps_per_epoch=steps_per_epoch, batch_size=batch_size, text_maxlen=200
+                    )
 
-	print('Test set results')
-	drmm_tks_model.evaluate(q_test_iterable, d_test_iterable, l_test_iterable)
+    print('Test set results')
+    mp_model.evaluate(q_test_iterable, d_test_iterable, l_test_iterable)
 
-	print('Saving prediction on test data in TREC format')
-	save_model_pred(test_data, dtks_pred_save_path, dtks_similarity_fn)
+    print('Saving prediction on test data in TREC format')
+    save_model_pred(test_data, mp_pred_save_path, mp_similarity_fn)
+
+    batch_size = 10
+    steps_per_epoch = num_samples // batch_size
+
+    # Train the model
+    drmm_tks_model = DRMM_TKS(
+                        queries=q_iterable, docs=d_iterable, labels=l_iterable, word_embedding=kv_model, epochs=3,
+                        topk=20, steps_per_epoch=steps_per_epoch, batch_size=batch_size
+                    )
+
+    print('Test set results')
+    drmm_tks_model.evaluate(q_test_iterable, d_test_iterable, l_test_iterable)
+
+    print('Saving prediction on test data in TREC format')
+    save_model_pred(test_data, dtks_pred_save_path, dtks_similarity_fn)
 
