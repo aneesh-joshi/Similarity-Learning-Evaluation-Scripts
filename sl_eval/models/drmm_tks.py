@@ -90,16 +90,37 @@ from sklearn.preprocessing import normalize
 from gensim import utils
 from collections import Iterable
 from keras.utils.np_utils import to_categorical
-try:
-    import keras.backend as K
-    from keras import optimizers
-    from keras.models import load_model
-    from keras.losses import hinge
-    from keras.models import Model
-    from keras.layers import Input, Embedding, Dot, Dense, Reshape, Dropout
-    KERAS_AVAILABLE = True
-except ImportError:
-    KERAS_AVAILABLE = False
+
+import keras.backend as K
+from keras import optimizers
+from keras.models import load_model
+from keras.losses import hinge
+from keras.models import Model
+from keras.layers import Input, Embedding, Dot, Dense, Reshape, Dropout
+
+# Set random seed for reproducible results.
+# For more details, read the keras docs:
+# https://keras.io/getting-started/faq/#how-can-i-obtain-reproducible-results-using-keras-during-development
+import os
+os.environ['PYTHONHASHSEED'] = '0'
+# The below is necessary for starting Numpy generated random numbers
+# in a well-defined initial state.
+np.random.seed(42)
+# The below is necessary for starting core Python generated random numbers
+# in a well-defined state.
+rn.seed(12345)
+# Force TensorFlow to use single thread.
+# Multiple threads are a potential source of
+# non-reproducible results.
+# For further details, see: https://stackoverflow.com/questions/42022950/which-seeds-have-to-be-set-where-to-realize-100-reproducibility-of-training-res
+session_conf = tf.ConfigProto(intra_op_parallelism_threads=1, inter_op_parallelism_threads=1)
+from keras import backend as K
+# The below tf.set_random_seed() will make random number generation
+# in the TensorFlow backend have a well-defined initial state.
+# For further details, see: https://www.tensorflow.org/api_docs/python/tf/set_random_seed
+tf.set_random_seed(1234)
+sess = tf.Session(graph=tf.get_default_graph(), config=session_conf)
+K.set_session(sess)
 
 logger = logging.getLogger(__name__)
 
@@ -859,9 +880,6 @@ class DRMM_TKS(utils.SaveLoad):
             will add 3 fully connected layers of 10, 20 and 30 hidden neurons
 
         """
-
-        if not KERAS_AVAILABLE:
-            raise ImportError("Please install Keras to use this model")
 
         n_layers = len(hidden_sizes)
 
