@@ -119,7 +119,7 @@ def mp_similarity_fn(q, d):
 if __name__ == '__main__':
     wikiqa_folder = os.path.join('..', '..', 'data', 'WikiQACorpus')
 
-    do_bidaf, do_mp, do_dtks = False, False, True
+    do_bidaf, do_mp, do_dtks = False, True, False
 
     q_iterable = WikiReaderIterable('query', os.path.join(wikiqa_folder, 'WikiQA-train.tsv'))
     d_iterable = WikiReaderIterable('doc', os.path.join(wikiqa_folder, 'WikiQA-train.tsv'))
@@ -165,15 +165,16 @@ if __name__ == '__main__':
         print("Prediction done. Saved as %s" % bidaf_t_pred_save_path)
 
     if do_mp:
-        n_epochs = 2
+        n_epochs = 2 
         batch_size = 10
+        text_maxlen = 100
         steps_per_epoch = num_samples // batch_size
-        #steps_per_epoch = 1
 
         # Train the model
         mp_model = MatchPyramid(
                             queries=q_iterable, docs=d_iterable, labels=l_iterable, word_embedding=kv_model,
-                            epochs=n_epochs, steps_per_epoch=steps_per_epoch, batch_size=batch_size, text_maxlen=200
+                            epochs=n_epochs, steps_per_epoch=steps_per_epoch, batch_size=batch_size, text_maxlen=text_maxlen,
+                            unk_handle_method='zero'
                         )
 
         print('Test set results')
@@ -185,10 +186,11 @@ if __name__ == '__main__':
     if do_dtks:
         batch_size = 10
         steps_per_epoch = num_samples // batch_size
+        n_epochs = 6 
 
         # Train the model
         drmm_tks_model = DRMM_TKS(
-                            queries=q_iterable, docs=d_iterable, labels=l_iterable, word_embedding=kv_model, epochs=3,
+                            queries=q_iterable, docs=d_iterable, labels=l_iterable, word_embedding=kv_model, epochs=n_epochs,
                             topk=20, steps_per_epoch=steps_per_epoch, batch_size=batch_size
                         )
 

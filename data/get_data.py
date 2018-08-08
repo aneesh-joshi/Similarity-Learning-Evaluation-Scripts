@@ -81,9 +81,8 @@ if __name__ == '__main__':
     elif args.datafile == 'all':
         logger.info("Downloading all files.")
         download(wikiqa_url, wikiqa_file, args.output_dir, unzip=True)
-        download(quoraqp_url, quoraqp_file, args.output_dir)
-        download(snli_url, snli_file, args.output_dir)
-        download(SICK_url, SICK_file, args.output_dir)
-        os.system('git clone ' + InsuranceQA_git_link)        
+        download(snli_url, snli_file, args.output_dir, unzip=True)
+        download(SICK_url, SICK_file, args.output_dir, unzip=True)
+        os.system('git clone ' + InsuranceQA_git_link)
     else:
         logger.info("Unknown dataset %s" % args.datafile)

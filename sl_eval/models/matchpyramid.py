@@ -621,7 +621,7 @@ class MatchPyramid(utils.SaveLoad):
             self.model.fit(x={"query": X1_train, "doc": X2_train}, y=y_train, batch_size=5,
                            verbose=self.verbose, epochs=self.epochs, shuffle=False, callbacks=val_callback)
 
-    def _translate_user_data(self, data):
+    def _translate_user_data(self, data, silent_mode=True):
         """Translates given user data into an indexed format which the model understands.
         If a model is not in the vocabulary, it is assigned the `unk_word_index` which maps
         to the unk vector decided by `unk_handle_method`    
@@ -665,10 +665,10 @@ class MatchPyramid(utils.SaveLoad):
             #     print(np.array(translated_sentence))
             #     print(np.array(translated_sentence).shape)
             translated_data.append(np.array(translated_sentence))
-
-        logger.info(
-            "Found %d unknown words. Set them to unknown word index : %d", n_skipped_words, self.unk_word_index
-        )
+        if not silent_mode:
+            logger.info(
+                "Found %d unknown words. Set them to unknown word index : %d", n_skipped_words, self.unk_word_index
+            )
 
         translated_data = np.array(translated_data)
         return translated_data
