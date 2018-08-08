@@ -9,6 +9,40 @@ from sl_eval.models.matchpyramid import MatchPyramid
 from sl_eval.models.drmm_tks import DRMM_TKS
 import re
 
+def w2v_similarity_fn(q, d):
+    """Similarity Function for Word2Vec
+
+    Parameters
+    ----------
+    query : list of str
+    doc : list of str
+
+    Returns
+    -------
+    similarity_score : float
+    """
+    def sent2vec(sent):
+        if len(sent)==0:
+            print('length is 0, Returning random')
+            return np.random.random((dim_size,))
+
+        vec = []
+        for word in sent:
+            if word in kv_model:
+                vec.append(kv_model[word])
+
+        if len(vec) == 0:
+            print('No words in vocab, Returning random')
+            return np.random.random((kv_model.vector_size,))
+
+        vec = np.array(vec)
+
+        return np.mean(vec, axis=0)
+
+    def cosine_similarity(vec1, vec2):
+        return np.dot(vec1, vec2)/(np.linalg.norm(vec1)* np.linalg.norm(vec2))
+    return cosine_similarity(sent2vec(q),sent2vec(d))
+
 if __name__ == '__main__':
 
 	train_split = 0.8
@@ -60,6 +94,16 @@ if __name__ == '__main__':
 
 	kv_model = api.load('glove-wiki-gigaword-' + str(n_word_embedding_dims))
 
+	print('Getting word2vec baseline')
+	num_correct, num_total = 0, 0
+	for q1, q2, d in zip(test_q1, test_q2, test_duplicate):
+		if w2v_similarity_fn(q1, q2) >= 0 and d == 1 or w2v_similarity_fn(q1, q2) < 0 and d == 0:
+			num_correct += 1
+		num_total += 1
+	print('Word2Vec baseline accuracy is %f' % (100. * num_correct / num_total))
+
+	exit()
+
 	n_epochs = 10
 	batch_size = 100
 	text_maxlen = 80
@@ -81,3 +125,6 @@ if __name__ == '__main__':
 	print('Results on MatchPyramid with Quora Duplicate Questions dataset')
 	print('Accuracy = %.2f' % accuracy*100)
 	print('Predicted %d correct out of a totol of %d' % (num_correct, num_total))
+
+
+
