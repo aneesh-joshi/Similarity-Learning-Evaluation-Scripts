@@ -649,7 +649,7 @@ class MatchPyramid(utils.SaveLoad):
         translated_data = np.array(translated_data)
         return translated_data
 
-    def predict(self, queries, docs):
+    def predict(self, queries, docs, silent_mode=True):
         """Predcits the similarity between a query-document pair
         based on the trained DRMM TKS model
 
@@ -694,9 +694,10 @@ class MatchPyramid(utils.SaveLoad):
         predictions = self.model.predict(x={'query': indexed_long_query_list, 'doc': indexed_long_doc_list,
             'dpool_index': DynamicMaxPooling.dynamic_pooling_index(long_query_len, long_doc_len, self.text_maxlen, self.text_maxlen)})
 
-        logger.info("Predictions in the format query, doc, similarity")
-        for i, (q, d) in enumerate(zip(long_query_list, long_doc_list)):
-            logger.info("%s\t%s\t%s", str(q), str(d), str(predictions[i][0]))
+        if not silent_mode:
+            logger.info("Predictions in the format query, doc, similarity")
+            for i, (q, d) in enumerate(zip(long_query_list, long_doc_list)):
+                logger.info("%s\t%s\t%s", str(q), str(d), str(predictions[i][0]))
 
         return predictions
   
