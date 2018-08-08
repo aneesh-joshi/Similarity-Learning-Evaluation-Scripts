@@ -489,30 +489,30 @@ class BiDAF_T:
         model = Model(inputs=[question_input, passage_input, char_question_input, char_passage_input], outputs=[pred])
         return model
 
-    def train(self):
-        # Build Model
-        self.model = self._get_model(max_passage_sents=self.max_passage_sents, max_passage_words=self.max_passage_words,
-                     max_question_words=self.max_question_words, embedding_matrix=self.embedding_matrix, 
-                     n_encoder_hidden_nodes=self.n_encoder_hidden_nodes, char_embedding_dim=self.char_embedding_dim, 
-                     depth=self.depth, filters=self.filters, max_word_charlen=self.max_word_charlen
-                     )
-        self.model.summary()
-        self.model.compile(loss=self.loss, optimizer=self.optimizer)
+    def train(self, queries=None, docs=None, labels=None, n_epochs=None, steps_per_epoch=None, batch_size=None):
+
+        # If you're building for the first time
+        if self.model is None:
+            # Build Model
+            self.model = self._get_model(max_passage_sents=self.max_passage_sents, max_passage_words=self.max_passage_words,
+                         max_question_words=self.max_question_words, embedding_matrix=self.embedding_matrix, 
+                         n_encoder_hidden_nodes=self.n_encoder_hidden_nodes, char_embedding_dim=self.char_embedding_dim, 
+                         depth=self.depth, filters=self.filters, max_word_charlen=self.max_word_charlen
+                         )
+            self.model.summary()
+            self.model.compile(loss=self.loss, optimizer=self.optimizer)
+
+        # To allow retraining
+        self.queries = queries or self.queries
+        self.docs = docs or self.docs
+        self.labels = labels or self.labels
+        self.n_epochs = n_epochs or self.n_epochs
+        self.steps_per_epoch = steps_per_epoch or self.steps_per_epoch
+        self.batch_size = batch_size or self.batch_size
 
         train_generator = self._get_full_batch_iter(self._get_pair_list(self.queries, self.docs, self.labels), self.batch_size)
         self.model.fit_generator(train_generator, steps_per_epoch=self.steps_per_epoch, epochs=self.n_epochs)
 
-
-        # print("Training on WikiQA now")
-        # #train_generator = train_batch_generator(q_train_iterable, d_train_iterable, l_train_iterable, batch_size)
-        # train_generator = _get_full_batch_iter(_get_pair_list(q_train_iterable, d_train_iterable, l_train_iterable), batch_size)
-        # model.fit_generator(train_generator, steps_per_epoch=steps_per_epoch, epochs=n_epochs)
-
-        # Evaluation
-
-        # queries, doc_group, label_group, query_ids, doc_id_group = MyOtherWikiIterable(
-        #                                                                 os.path.join('experimental_data', 'WikiQACorpus', 'WikiQA-test.tsv')
-        #                                                             ).get_stuff()
 
     def batch_predict(self, q, doc):
 
