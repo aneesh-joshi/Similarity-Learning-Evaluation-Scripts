@@ -87,7 +87,7 @@ class IQAReader:
             labels.append(batch_l)
             batch_a, batch_l, batch_doc_ids = [], [], []
 
-        return questions, answers, labels, question_ids, doc_ids
+        return [questions, answers, labels, question_ids, doc_ids]
 
 if __name__ == '__main__':
     iqa_reader = InsuranceQAReader(pool_size=32)
