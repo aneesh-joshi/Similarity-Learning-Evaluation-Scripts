@@ -3,7 +3,6 @@ Utility script to download the datsets for Similarity Learning
 Currently supports:
 - WikiQA
 - Quora Duplicate Question Pairs
-- Glove 6 Billion tokens Word Embeddings
 
 Example Usage:
 To get wikiqa
@@ -11,9 +10,6 @@ $ python get_data.py --datafile wikiqa
 
 To get quoraqp
 $ python get_data.py --datafile quoraqp
-
-To get Glove Word Embeddings
-$ python get_data.py --datafile glove
 """
 import requests
 import argparse
@@ -26,10 +22,11 @@ logger = logging.getLogger(__name__)
 # The urls and filepaths of currently supported files
 wikiqa_url, wikiqa_file = "https://download.microsoft.com/download/E/5/F/E5FCFCEE-7005-4814-853D-DAA7C66507E0/", "WikiQACorpus.zip"  # noqa
 quoraqp_url, quoraqp_file = "http://qim.ec.quoracdn.net/", "quora_duplicate_questions.tsv"
-glove_url, glove_file = "https://nlp.stanford.edu/data/", "glove.6B.zip"
 snli_url, snli_file = "https://nlp.stanford.edu/projects/snli/", "snli_1.0.zip"
+SICK_url, SICK_file = "http://clic.cimec.unitn.it/composes/materials/", "SICK.zip"
+
 InsuranceQA_git_link = "https://github.com/codekansas/insurance_qa_python.git"
-SICK_link = "http://clic.cimec.unitn.it/composes/materials/SICK.zip"
+
 def download(url, file_name, output_dir, unzip=False):
     """Utility function to download a given file from the given url
     Paramters:
@@ -85,6 +82,8 @@ if __name__ == '__main__':
         logger.info("Downloading all files.")
         download(wikiqa_url, wikiqa_file, args.output_dir, unzip=True)
         download(quoraqp_url, quoraqp_file, args.output_dir)
-        download(glove_url, glove_file, args.output_dir, unzip=True)
+        download(snli_url, snli_file, args.output_dir)
+        download(SICK_url, SICK_file, args.output_dir)
+        os.system('git clone ' + InsuranceQA_git_link)        
     else:
         logger.info("Unknown dataset %s" % args.datafile)
