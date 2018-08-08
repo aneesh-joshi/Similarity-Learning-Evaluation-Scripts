@@ -99,7 +99,7 @@ def dtks_similarity_fn(q, d):
     -------
     similarity_score : float
     """
-    return dtks_model.predict([q], [[d]])[0][0]
+    return drmm_tks_model.predict([q], [[d]])[0][0]
 
 def mp_similarity_fn(q, d):
     """Similarity Function for DRMM TKS
@@ -144,7 +144,7 @@ if __name__ == '__main__':
 
 	kv_model = api.load('glove-wiki-gigaword-' + str(num_embedding_dims))
 
-	n_epochs = 2
+	n_epochs = 6
 	batch_size = 10
 	steps_per_epoch = num_samples // batch_size
 	#steps_per_epoch = 1
