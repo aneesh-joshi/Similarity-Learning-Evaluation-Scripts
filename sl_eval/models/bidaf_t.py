@@ -8,6 +8,7 @@ from .utils.custom_layers import Highway
 
 import numpy as np
 import tensorflow as tf
+import random as rn
 import os
 from collections import Counter
 import gensim.downloader as api
