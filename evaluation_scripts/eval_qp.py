@@ -1,7 +1,7 @@
 """This script evaluates the DRMM_TKS, MatchPyramid and BiDAF-T model on Quora Duplicate Questions Task"""
 
 import sys
-sys.path.append('../..')
+sys.path.append('..')
 
 from gensim import downloader as api
 from sklearn.utils import shuffle
