@@ -73,6 +73,7 @@ class BiDAF_T:
         self.pad_word_index = 0
         self.depth = depth
         self.filters = filters
+        self.model = None
         #sgd = optimizers.SGD(lr=0.01, decay=1e-6, momentum=0.9, nesterov=True)
         # ada = optimizers.Adadelta(lr=0.5)
         # optimizer = ada
@@ -245,8 +246,8 @@ class BiDAF_T:
         while len(sentence) < max_len:
             sentence.append(self.pad_word_index)
         if len(sentence) > max_len:
-            logger.info("Max length of %d wasn't long enough for sentence:%s of length %d. Truncating sentence for now",
-                max_len, str(str_sent), len(sentence))
+            logger.info("Max length of %d wasn't long enough for sentence of length %d. Truncating sentence for now",
+                max_len, len(sentence))
             sentence = sentence[:max_len]
         return sentence
 
@@ -535,7 +536,6 @@ class BiDAF_T:
         preds = self.model.predict(x={'question_input':wq,  'passage_input':test_docs,
                                  'char_passage_input': ctest_docs, 'char_question_input': cq})
 
-        print(preds)
         return preds
 
 # def test_generator():

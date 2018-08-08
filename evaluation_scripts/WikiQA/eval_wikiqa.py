@@ -159,7 +159,7 @@ if __name__ == '__main__':
         num_squad_samples = 53968
 
         n_epochs = 2 
-        batch_size = 10
+        batch_size = 100
         text_maxlen = 100
         steps_per_epoch_squad = num_squad_samples // batch_size
 
@@ -176,15 +176,14 @@ if __name__ == '__main__':
                 batch_score = bidaf_t_model.batch_predict(q, doc)
                 for d, l, d_id, bscore in zip(doc, labels, d_ids, batch_score):
                     my_score = bscore[1]
-                    print(i, my_score)
                     i += 1
                     f.write(q_id + '\t' + 'Q0' + '\t' + str(d_id) + '\t' + '99' + '\t' + str(my_score) + '\t' + 'STANDARD' + '\n')
         print("Prediction done. Saved as %s" % bidaf_t_pred_save_path)
 
 
         print('FineTuning on WikiQA-train set')
-        finetune_epochs = 2
-        finetune_batch_size = 10
+        finetune_epochs = 1
+        finetune_batch_size = 100
         steps_per_epoch = num_samples_wikiqa // finetune_batch_size
         bidaf_t_model.train(queries=q_iterable, docs=d_iterable, labels=l_iterable, batch_size=finetune_batch_size,
                             steps_per_epoch=steps_per_epoch)
@@ -198,7 +197,6 @@ if __name__ == '__main__':
                 batch_score = bidaf_t_model.batch_predict(q, doc)
                 for d, l, d_id, bscore in zip(doc, labels, d_ids, batch_score):
                     my_score = bscore[1]
-                    print(i, my_score)
                     i += 1
                     f.write(q_id + '\t' + 'Q0' + '\t' + str(d_id) + '\t' + '99' + '\t' + str(my_score) + '\t' + 'STANDARD' + '\n')
         print("Prediction done. Saved as %s" % bidaf_t_finetuned_pred_save_path)        
