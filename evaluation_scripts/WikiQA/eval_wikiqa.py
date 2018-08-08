@@ -118,8 +118,9 @@ def mp_similarity_fn(q, d):
 
 if __name__ == '__main__':
     wikiqa_folder = os.path.join('..', '..', 'data', 'WikiQACorpus')
+    squad_t_path = os.path.join('..', '..', 'data', 'SQUAD-T-QA.tsv')
 
-    do_bidaf, do_mp, do_dtks = False, True, False
+    do_bidaf, do_mp, do_dtks = True, False, False
 
     q_iterable = WikiReaderIterable('query', os.path.join(wikiqa_folder, 'WikiQA-train.tsv'))
     d_iterable = WikiReaderIterable('doc', os.path.join(wikiqa_folder, 'WikiQA-train.tsv'))
@@ -135,12 +136,13 @@ if __name__ == '__main__':
 
     test_data = WikiReaderStatic(os.path.join(wikiqa_folder, 'WikiQA-test.tsv')).get_data()
 
-    num_samples = 9000
+    num_samples_wikiqa = 9000
     num_embedding_dims = 300
     qrels_save_path = 'qrels_wikiqa'
     mp_pred_save_path = 'pred_mp_wikiqa'
     dtks_pred_save_path = 'pred_dtks_wikiqa'
     bidaf_t_pred_save_path = 'pred_bidaf_t_wikiqa'
+    bidaf_t_finetuned_pred_save_path = 'pred_bidaf_t_finetuned_wikiqa'
     
     print('Saving qrels for WikiQA test data')
     save_qrels(test_data, qrels_save_path)
@@ -150,25 +152,62 @@ if __name__ == '__main__':
 
 
     if do_bidaf:
-        bidaf_t_model = BiDAF_T(q_iterable, d_iterable, l_iterable, kv_model, n_epochs=1)
+        q_squad = WikiReaderIterable('query', squad_t_path)
+        d_squad = WikiReaderIterable('doc', squad_t_path)
+        l_squad = WikiReaderIterable('label', squad_t_path)
+
+        num_squad_samples = 53968
+
+        n_epochs = 2 
+        batch_size = 10
+        text_maxlen = 100
+        steps_per_epoch_squad = num_squad_samples // batch_size
+
+        print('Pretraining on SQUAD-T dataset')
+        bidaf_t_model = BiDAF_T(q_iterable, d_iterable, l_iterable, kv_model, n_epochs=n_epochs,
+                                steps_per_epoch=steps_per_epoch_squad)
+
+
+        print('Testing on WikiQA-test')
         queries, doc_group, label_group, query_ids, doc_id_group = test_data
         i=0
         with open(bidaf_t_pred_save_path, 'w') as f:
             for q, doc, labels, q_id, d_ids in zip(queries, doc_group, label_group, query_ids, doc_id_group):
                 batch_score = bidaf_t_model.batch_predict(q, doc)
                 for d, l, d_id, bscore in zip(doc, labels, d_ids, batch_score):
-                    #print(bscore)
                     my_score = bscore[1]
                     print(i, my_score)
                     i += 1
                     f.write(q_id + '\t' + 'Q0' + '\t' + str(d_id) + '\t' + '99' + '\t' + str(my_score) + '\t' + 'STANDARD' + '\n')
         print("Prediction done. Saved as %s" % bidaf_t_pred_save_path)
 
+
+        print('FineTuning on WikiQA-train set')
+        finetune_epochs = 2
+        finetune_batch_size = 10
+        steps_per_epoch = num_samples_wikiqa // finetune_batch_size
+        bidaf_t_model.train(queries=q_iterable, docs=d_iterable, labels=l_iterable, batch_size=finetune_batch_size,
+                            steps_per_epoch=steps_per_epoch)
+
+
+        print('Testing on WikiQA-test after finetuning')
+        queries, doc_group, label_group, query_ids, doc_id_group = test_data
+        i=0
+        with open(bidaf_t_finetuned_pred_save_path, 'w') as f:
+            for q, doc, labels, q_id, d_ids in zip(queries, doc_group, label_group, query_ids, doc_id_group):
+                batch_score = bidaf_t_model.batch_predict(q, doc)
+                for d, l, d_id, bscore in zip(doc, labels, d_ids, batch_score):
+                    my_score = bscore[1]
+                    print(i, my_score)
+                    i += 1
+                    f.write(q_id + '\t' + 'Q0' + '\t' + str(d_id) + '\t' + '99' + '\t' + str(my_score) + '\t' + 'STANDARD' + '\n')
+        print("Prediction done. Saved as %s" % bidaf_t_finetuned_pred_save_path)        
+
     if do_mp:
         n_epochs = 2 
         batch_size = 10
         text_maxlen = 100
-        steps_per_epoch = num_samples // batch_size
+        steps_per_epoch = num_samples_wikiqa // batch_size
 
         # Train the model
         mp_model = MatchPyramid(
@@ -185,7 +224,7 @@ if __name__ == '__main__':
 
     if do_dtks:
         batch_size = 10
-        steps_per_epoch = num_samples // batch_size
+        steps_per_epoch = num_samples_wikiqa // batch_size
         n_epochs = 6 
 
         # Train the model
