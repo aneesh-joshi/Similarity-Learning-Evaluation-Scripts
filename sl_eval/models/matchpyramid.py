@@ -762,6 +762,7 @@ class MatchPyramid(utils.SaveLoad):
 
                 x1_batch, x2_batch, dupl_batch, x1_len, x2_len = [], [], [], [], []
 
+                test_X, test_Y = [], []
         return num_correct, num_total, num_correct/num_total
 
     def evaluate(self, queries, docs, labels):
@@ -931,6 +932,4 @@ class MatchPyramid(utils.SaveLoad):
 
         model = Model(inputs=[query, doc, dpool_index], outputs=out_)
         return model
-
-                test_X, test_Y = [], []
 

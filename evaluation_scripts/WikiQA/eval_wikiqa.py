@@ -3,7 +3,7 @@ sys.path.append('../..')
 import sys
 import os
 
-from sl_eval.models import MatchPyramid
+from sl_eval.models import MatchPyramid, DRMM_TKS
 from data_readers import WikiReaderIterable, WikiReaderStatic
 import gensim.downloader as api
 
@@ -119,17 +119,17 @@ def mp_similarity_fn(q, d):
 if __name__ == '__main__':
 	wikiqa_folder = os.path.join('..', '..', 'data', 'WikiQACorpus')
 
-	q_iterable = WikiReader('query', os.path.join(wikiqa_folder, 'WikiQA-train.tsv'))
-	d_iterable = WikiReader('doc', os.path.join(wikiqa_folder, 'WikiQA-train.tsv'))
-	l_iterable = WikiReader('label', os.path.join(wikiqa_folder, 'WikiQA-train.tsv'))
+	q_iterable = WikiReaderIterable('query', os.path.join(wikiqa_folder, 'WikiQA-train.tsv'))
+	d_iterable = WikiReaderIterable('doc', os.path.join(wikiqa_folder, 'WikiQA-train.tsv'))
+	l_iterable = WikiReaderIterable('label', os.path.join(wikiqa_folder, 'WikiQA-train.tsv'))
 
-	q_val_iterable = WikiReader('query', os.path.join(wikiqa_folder, 'WikiQA-dev.tsv'))
-	d_val_iterable = WikiReader('doc', os.path.join(wikiqa_folder, 'WikiQA-dev.tsv'))
-	l_val_iterable = WikiReader('label', os.path.join(wikiqa_folder, 'WikiQA-dev.tsv'))
+	q_val_iterable = WikiReaderIterable('query', os.path.join(wikiqa_folder, 'WikiQA-dev.tsv'))
+	d_val_iterable = WikiReaderIterable('doc', os.path.join(wikiqa_folder, 'WikiQA-dev.tsv'))
+	l_val_iterable = WikiReaderIterable('label', os.path.join(wikiqa_folder, 'WikiQA-dev.tsv'))
 
-	q_test_iterable = WikiReader('query', os.path.join(wikiqa_folder, 'WikiQA-test.tsv'))
-	d_test_iterable = WikiReader('doc', os.path.join(wikiqa_folder, 'WikiQA-test.tsv'))
-	l_test_iterable = WikiReader('label', os.path.join(wikiqa_folder, 'WikiQA-test.tsv'))
+	q_test_iterable = WikiReaderIterable('query', os.path.join(wikiqa_folder, 'WikiQA-test.tsv'))
+	d_test_iterable = WikiReaderIterable('doc', os.path.join(wikiqa_folder, 'WikiQA-test.tsv'))
+	l_test_iterable = WikiReaderIterable('label', os.path.join(wikiqa_folder, 'WikiQA-test.tsv'))
 
 	test_data = WikiReaderStatic(os.path.join(wikiqa_folder, 'WikiQA-test.tsv')).get_data()
 
@@ -140,13 +140,14 @@ if __name__ == '__main__':
 	dtks_pred_save_path = 'pred_dtks_wikiqa'
 	
 	print('Saving qrels for WikiQA test data')
-	save_qrels(test_data)
+	save_qrels(test_data, qrels_save_path)
 
 	kv_model = api.load('glove-wiki-gigaword-' + str(num_embedding_dims))
 
 	n_epochs = 2
 	batch_size = 10
 	steps_per_epoch = num_samples // batch_size
+	#steps_per_epoch = 1
 
 	# Train the model
 	mp_model = MatchPyramid(
@@ -159,7 +160,6 @@ if __name__ == '__main__':
 
 	print('Saving prediction on test data in TREC format')
 	save_model_pred(test_data, mp_pred_save_path, mp_similarity_fn)
-
 
 	batch_size = 10
 	steps_per_epoch = num_samples // batch_size
