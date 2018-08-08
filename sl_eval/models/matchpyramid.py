@@ -442,7 +442,6 @@ class MatchPyramid(utils.SaveLoad):
             X2.append(neg_doc)
             y.append(0)
 
-        print('There are pairs in pair_list', np.array(X1).shape, np.array(X2).shape, np.array(y).shape)
         return np.array(X1), np.array(X2), np.array(y)
 
     def _get_classification_batch(self, batch_size):
@@ -648,10 +647,6 @@ class MatchPyramid(utils.SaveLoad):
         )
 
         translated_data = np.array(translated_data)
-        print(translated_data)
-        print(translated_data.shape)
-        # translated_data = translated_data.reshape((translated_data.shape[0], self.text_maxlen))
-
         return translated_data
 
     def predict(self, queries, docs):
@@ -726,7 +721,6 @@ class MatchPyramid(utils.SaveLoad):
 
                 for tx, ty in zip(test_X, test_Y):
                     this_pred = self.model.predict(tx)
-                    print(this_pred)
                     for pred_val, true_val in zip(this_pred, ty):
                         print(pred_val, true_val)
                         if np.argmax(pred_val) == np.argmax(true_val):
@@ -736,7 +730,39 @@ class MatchPyramid(utils.SaveLoad):
                 x1_batch, x2_batch, dupl_batch, x1_len, x2_len = [], [], [], [], []
                 test_X, test_Y = [], []
 
-        print(num_correct, num_total, num_correct/num_total) 
+        return num_correct, num_total, num_correct/num_total
+
+    def evaluate_inference(self, X1, X2, D, batch_size=20):
+        batch_size=20
+        num_correct = 0
+        num_total = 0
+        x1_batch, x2_batch, dupl_batch = [], [], []
+        test_X, test_Y = [], []
+        x1_len, x2_len = [], []
+        for x1, x2, d in zip(X1, X2, D):
+            x1_batch.append(self._make_indexed(x1))
+            x2_batch.append(self._make_indexed(x2))
+            x1_len.append(len(x1))
+            x2_len.append(len(x2))
+            dupl_batch.append(to_categorical(d, self.num_inferences))
+
+            if len(x1_batch) % batch_size == 0:
+                test_X.append({'query': np.array(x1_batch), 'doc': np.array(x2_batch),
+                    'dpool_index': DynamicMaxPooling.dynamic_pooling_index(x1_len, x2_len, self.text_maxlen, self.text_maxlen)})
+                test_Y.append(np.squeeze(np.array(dupl_batch)))
+
+                for tx, ty in zip(test_X, test_Y):
+                    this_pred = self.model.predict(tx)
+                    print(this_pred)
+                    for pred_val, true_val in zip(this_pred, ty):
+                        print(pred_val, true_val)
+                        if np.argmax(pred_val) == np.argmax(true_val):
+                            num_correct += 1
+                        num_total += 1
+
+                x1_batch, x2_batch, dupl_batch, x1_len, x2_len = [], [], [], [], []
+
+        return num_correct, num_total, num_correct/num_total
 
     def evaluate(self, queries, docs, labels):
         """Evaluates the model and provides the results in terms of metrics (MAP, nDCG)
@@ -906,36 +932,5 @@ class MatchPyramid(utils.SaveLoad):
         model = Model(inputs=[query, doc, dpool_index], outputs=out_)
         return model
 
-    def evaluate_inference(self, X1, X2, D, batch_size=20):
-        batch_size=20
-        num_correct = 0
-        num_total = 0
-        x1_batch, x2_batch, dupl_batch = [], [], []
-        test_X, test_Y = [], []
-        x1_len, x2_len = [], []
-        for x1, x2, d in zip(X1, X2, D):
-            x1_batch.append(self._make_indexed(x1))
-            x2_batch.append(self._make_indexed(x2))
-            x1_len.append(len(x1))
-            x2_len.append(len(x2))
-            dupl_batch.append(to_categorical(d, self.num_inferences))
-
-            if len(x1_batch) % batch_size == 0:
-                test_X.append({'query': np.array(x1_batch), 'doc': np.array(x2_batch),
-                    'dpool_index': DynamicMaxPooling.dynamic_pooling_index(x1_len, x2_len, self.text_maxlen, self.text_maxlen)})
-                test_Y.append(np.squeeze(np.array(dupl_batch)))
-
-                for tx, ty in zip(test_X, test_Y):
-                    this_pred = self.model.predict(tx)
-                    print(this_pred)
-                    for pred_val, true_val in zip(this_pred, ty):
-                        print(pred_val, true_val)
-                        if np.argmax(pred_val) == np.argmax(true_val):
-                            num_correct += 1
-                        num_total += 1
-
-                x1_batch, x2_batch, dupl_batch, x1_len, x2_len = [], [], [], [], []
                 test_X, test_Y = [], []
-
-        print(num_correct, num_total, num_correct/num_total) 
 

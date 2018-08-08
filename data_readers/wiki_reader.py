@@ -2,7 +2,7 @@ import numpy as np
 import re
 import csv
 
-class MyWikiIterable:
+class WikiReaderIterable:
     def __init__(self, iter_type, fpath):
         self.type_translator = {'query': 0, 'doc': 1, 'label': 2}
         self.iter_type = iter_type
@@ -74,6 +74,25 @@ class MyWikiIterable:
                 else:
                     n_filtered_docs += 1
                     n_relevant_docs = 0
+
+
+class WikiReaderStatic:
+
+    def __init__(self, fpath):
+        # self.type_translator = {'query': 0, 'doc': 1, 'label': 2}
+        # self.iter_type = iter_type
+        with open(fpath, encoding='utf8') as tsv_file:
+            tsv_reader = csv.reader(tsv_file, delimiter='\t', quotechar='"', quoting=csv.QUOTE_NONE)
+            self.data_rows = []
+            for row in tsv_reader:
+                self.data_rows.append(row)
+        self.to_print = ""
+
+    def preprocess_sent(self, sent):
+        """Utility function to lower, strip and tokenize each sentence
+
+        Replace this function if you want to handle preprocessing differently"""
+        return re.sub("[^a-zA-Z0-9]", " ", sent.strip().lower()).split()
 
     def  get_stuff(self):
         # Defining some consants for .tsv reading
@@ -148,4 +167,4 @@ class MyWikiIterable:
                 else:
                     n_filtered_docs += 1
                     n_relevant_docs = 0
-        return queries, docs, labels, query_ids, doc_id_group
+        return [queries, docs, labels, query_ids, doc_id_group]

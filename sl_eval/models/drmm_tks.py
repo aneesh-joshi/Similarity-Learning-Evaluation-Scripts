@@ -2,8 +2,6 @@
 # -*- coding: utf-8 -*-
 #
 # Author: Aneesh Joshi <aneeshyjoshi@gmail.com>
-# Copyright (C) 2018 RaRe Technologies s.r.o.
-# Licensed under the GNU LGPL v2.1 - http://www.gnu.org/licenses/lgpl.html
 
 """This module makes a trainable and usable model for getting similarity between documents using the DRMM_TKS model.
 
@@ -194,7 +192,6 @@ def _get_pair_list(queries, docs, labels, _make_indexed, is_iterable):
                             if new_item[1] == 0:
                                 j+=1
                                 yield(_make_indexed(q), _make_indexed(item[0]), _make_indexed(new_item[0]))
-            print("SAMPLA RE!!!!!!!!!!!!!!!!!!", j)
     else:
         for q, doc, label in zip(queries, docs, labels):
             doc, label = (list(t) for t in zip(*sorted(zip(doc, label), reverse=True)))
@@ -933,7 +930,7 @@ class DRMM_TKS(utils.SaveLoad):
                 x1_batch, x2_batch, dupl_batch, x1_len, x2_len = [], [], [], [], []
                 test_X, test_Y = [], []
 
-        print(num_correct, num_total, num_correct/num_total) 
+        return num_correct, num_total, num_correct/num_total 
 
     def evaluate_inference(self, X1, X2, D, batch_size=20):
         num_correct = 0
@@ -961,4 +958,4 @@ class DRMM_TKS(utils.SaveLoad):
                 x1_batch, x2_batch, dupl_batch, x1_len, x2_len = [], [], [], [], []
                 test_X, test_Y = [], []
 
-        print(num_correct, num_total, num_correct/num_total) 
+        return num_correct, num_total, num_correct/num_total
