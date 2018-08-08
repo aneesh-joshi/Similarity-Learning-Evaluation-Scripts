@@ -60,9 +60,9 @@ if __name__ == '__main__':
 
 	kv_model = api.load('glove-wiki-gigaword-' + str(n_word_embedding_dims))
 
-	n_epochs = 40
+	n_epochs = 10
 	batch_size = 100
-	text_maxlen = 200
+	text_maxlen = 80
 	mp_model = MatchPyramid(queries=train_q1, docs=train_q2, labels=train_duplicate, target_mode='classification',
 							word_embedding=kv_model, epochs=n_epochs, text_maxlen=text_maxlen, batch_size=batch_size,
 							steps_per_epoch=num_samples//batch_size)
