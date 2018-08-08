@@ -4,7 +4,7 @@ sys.path.append('../..')
 from sklearn.utils import shuffle
 from data_readers import IQAReader
 import gensim.downloader as api
-from sl_eval.models.matchpyramid import MatchPyramid, DRMM_TKS
+from sl_eval.models import MatchPyramid, DRMM_TKS
 
 def save_qrels(test_data, fname):
     """Saves the WikiQA data `Truth Data`. This remains the same regardless of which model you use.
@@ -79,6 +79,7 @@ def save_model_pred(test_data, fname, similarity_fn):
             - similarity_score : float
     """
     with open(fname, 'w') as f:
+        queries, doc_group, label_group, query_ids, doc_id_group = test_data
         for q, doc, labels, q_id, d_ids in zip(queries, doc_group, label_group, query_ids, doc_id_group):
             for d, l, d_id in zip(doc, labels, d_ids):
                 my_score = str(similarity_fn(q,d))
