@@ -22,8 +22,8 @@ logger = logging.getLogger(__name__)
 
 class BiDAF_T:
     def __init__(self, queries, docs, labels, kv_model, max_passage_words=100, max_passage_sents=1, max_question_words=40,
-        char_embedding_dim=100, batch_size=50, unk_handle_method='zero', pad_handle_method='zero', optimizer='adam',
-        n_epochs=5, n_encoder_hidden_nodes=200, max_word_charlen=25, depth=100, filters=5, word_embedding_dim=100,
+        char_embedding_dim=8, batch_size=50, unk_handle_method='zero', pad_handle_method='zero', optimizer='adam',
+        n_epochs=5, n_encoder_hidden_nodes=200, max_word_charlen=25, depth=5, filters=100, word_embedding_dim=100,
         steps_per_epoch=1):
 
         self.queries = queries
@@ -40,9 +40,9 @@ class BiDAF_T:
         self.pad_handle_method = pad_handle_method
         self.char_embedding_dim = char_embedding_dim
         self.n_epochs = n_epochs
-        self.max_word_charlen = self.max_word_charlen
+        self.max_word_charlen = max_word_charlen
         self.loss = 'categorical_crossentropy'
-        self.n_encoder_hidden_nodes = self.n_encoder_hidden_nodes
+        self.n_encoder_hidden_nodes = n_encoder_hidden_nodes
         self.char_pad_index = 0
         self.pad_word_index = 0
         self.depth = depth
@@ -51,9 +51,13 @@ class BiDAF_T:
         # ada = optimizers.Adadelta(lr=0.5)
         # optimizer = ada
         self.steps_per_epoch = steps_per_epoch
+        self.optimizer = 'adam'
 
         self.char2index = {}
         self.word2index = {}
+
+        self.build_vocab()
+        self.train()
 
 
 
@@ -102,10 +106,10 @@ class BiDAF_T:
 
         self.word2index = {}
         for i, word in enumerate(word_counter.keys(), start=1):
-            word2index[word] = i
+            self.word2index[word] = i
 
         self.pad_word_index = 0
-        self.unk_word_index = vocab_size + 1
+        self.unk_word_index = self.vocab_size + 1
 
         logger.info(
             'The pad_word is set to the index: %d and the unkwnown words will be set to the index %d',
@@ -164,7 +168,7 @@ class BiDAF_T:
         """Converts a str word into a list of its character indices with pads"""
         list_word = list(word)
         indexed_word = [self.char2index[l] for l in list_word]
-        indexed_word = indexed_word + (self.max_word_charlen - len(indexed_word))*[char_pad_index]
+        indexed_word = indexed_word + (self.max_word_charlen - len(indexed_word))*[self.char_pad_index]
         if len(indexed_word) > self.max_word_charlen:
             logger.info('Word: %s is really long of length: %d. Clipping to length %d for now \n\n\n',
                          word, len(indexed_word), self.max_word_charlen)
@@ -319,12 +323,12 @@ class BiDAF_T:
                         for new_item in zip(doc, label):
                             if new_item[1] == 0:
                                 yield(
-                                  _make_sentence_indexed_padded(q, max_question_words),
-                                  _make_sentence_indexed_padded(item[0], self.max_passage_words),
-                                  _make_sentence_indexed_padded(new_item[0], self.max_passage_words),
-                                  _make_sentence_indexed_padded_charred(q, max_question_words),
-                                  _make_sentence_indexed_padded_charred(item[0],self.max_passage_words),
-                                  _make_sentence_indexed_padded_charred(new_item[0], self.max_passage_words)
+                                  self._make_sentence_indexed_padded(q, self.max_question_words),
+                                  self._make_sentence_indexed_padded(item[0], self.max_passage_words),
+                                  self._make_sentence_indexed_padded(new_item[0], self.max_passage_words),
+                                  self._make_sentence_indexed_padded_charred(q, self.max_question_words),
+                                  self._make_sentence_indexed_padded_charred(item[0],self.max_passage_words),
+                                  self._make_sentence_indexed_padded_charred(new_item[0], self.max_passage_words)
                                 )
 
     def _string2numeric_hash(self, text):
@@ -339,7 +343,8 @@ class BiDAF_T:
 
 
     def _get_model(self, max_passage_sents, max_passage_words, max_question_words, embedding_matrix, n_highway_layers=2,
-            highway_activation='relu', embed_trainable=False, n_encoder_hidden_nodes=200, filters=100, depth=5):
+            highway_activation='relu', embed_trainable=False, n_encoder_hidden_nodes=200, filters=100, depth=5,
+            max_word_charlen=25, char_embedding_dim=8):
         
         total_passage_words = max_passage_sents * max_passage_words
 
@@ -388,7 +393,7 @@ class BiDAF_T:
 
         # Highway Layer doesn't affect the shape of the tensor
         for i in range(n_highway_layers):
-            highway_layer = Highway(activation=highway_activation, name='highway_{}'.format(i))
+            highway_layer = Highway(activation='relu', name='highway_{}'.format(i))
             
             question_layer = TimeDistributed(highway_layer, name=highway_layer.name + "_qtd")
             question_embedding = question_layer(question_embedding)
@@ -460,14 +465,17 @@ class BiDAF_T:
 
     def train(self):
         # Build Model
-        self.model = self._get_model(self.max_passage_sents, self.max_passage_words, self.max_question_words,
-                        self.embedding_matrix, self.n_encoder_hidden_nodes, self.char_embedding_dim, self.depth,
-                        self.filters)
+        self.model = self._get_model(max_passage_sents=self.max_passage_sents, max_passage_words=self.max_passage_words,
+                     max_question_words=self.max_question_words, embedding_matrix=self.embedding_matrix, 
+                     n_encoder_hidden_nodes=self.n_encoder_hidden_nodes, char_embedding_dim=self.char_embedding_dim, 
+                     depth=self.depth, filters=self.filters, max_word_charlen=self.max_word_charlen
+                     )
         self.model.summary()
         self.model.compile(loss=self.loss, optimizer=self.optimizer)
-        model.fit_generator(train_generator, steps_per_epoch=self.steps_per_epoch, epochs=self.n_epochs)
 
-        # train_generator = self._get_full_batch_iter(self._get_pair_list(self.queries, self.docs, self.labels), self.batch_size)
+        train_generator = self._get_full_batch_iter(self._get_pair_list(self.queries, self.docs, self.labels), self.batch_size)
+        self.model.fit_generator(train_generator, steps_per_epoch=self.steps_per_epoch, epochs=self.n_epochs)
+
 
         # print("Training on WikiQA now")
         # #train_generator = train_batch_generator(q_train_iterable, d_train_iterable, l_train_iterable, batch_size)
@@ -480,7 +488,7 @@ class BiDAF_T:
         #                                                                 os.path.join('experimental_data', 'WikiQACorpus', 'WikiQA-test.tsv')
         #                                                             ).get_stuff()
 
-    def batch_predict(self, model, q, doc):
+    def batch_predict(self, q, doc):
 
         wq, cq = [], []
         test_docs, ctest_docs = [], []
@@ -493,13 +501,13 @@ class BiDAF_T:
             ctest_docs.append(self._make_sentence_indexed_padded_charred(d, self.max_passage_words))
 
         wq = np.array(wq).reshape((num_docs, self.max_question_words))
-        cq = np.array(cq).reshape((num_docs, self.max_question_words, max_word_charlen))
+        cq = np.array(cq).reshape((num_docs, self.max_question_words, self.max_word_charlen))
 
-        test_docs = np.array(test_docs).reshape((num_docs, total_passage_words))
-        ctest_docs = np.array(ctest_docs).reshape((num_docs, total_passage_words, max_word_charlen))
+        test_docs = np.array(test_docs).reshape((num_docs, self.total_passage_words))
+        ctest_docs = np.array(ctest_docs).reshape((num_docs, self.total_passage_words, self.max_word_charlen))
 
-        preds = model.predict(x={'question_input':wq,  'passage_input':test_docs,
-                                 'char_passage_input': ctrain_docs, 'char_question_input': cq})
+        preds = self.model.predict(x={'question_input':wq,  'passage_input':test_docs,
+                                 'char_passage_input': ctest_docs, 'char_question_input': cq})
 
         print(preds)
         return preds

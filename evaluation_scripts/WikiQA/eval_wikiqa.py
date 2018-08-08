@@ -134,7 +134,7 @@ if __name__ == '__main__':
     test_data = WikiReaderStatic(os.path.join(wikiqa_folder, 'WikiQA-test.tsv')).get_data()
 
     num_samples = 9000
-    num_embedding_dims = 300
+    num_embedding_dims = 50#300
     qrels_save_path = 'qrels_wikiqa'
     mp_pred_save_path = 'pred_mp_wikiqa'
     dtks_pred_save_path = 'pred_dtks_wikiqa'
@@ -146,11 +146,12 @@ if __name__ == '__main__':
     kv_model = api.load('glove-wiki-gigaword-' + str(num_embedding_dims))
 
 
-    bidaf_model = BiDAF_T(q_iterable, d_iterable, l_iterable, kv_model, n_epochs=1, )
+    bidaf_t_model = BiDAF_T(q_iterable, d_iterable, l_iterable, kv_model, n_epochs=1)
+    queries, doc_group, label_group, query_ids, doc_id_group = test_data
     i=0
     with open(bidaf_t_pred_save_path, 'w') as f:
         for q, doc, labels, q_id, d_ids in zip(queries, doc_group, label_group, query_ids, doc_id_group):
-            batch_score = new_batch_tiny_predict(model, q, doc)
+            batch_score = bidaf_t_model.batch_predict(q, doc)
             for d, l, d_id, bscore in zip(doc, labels, d_ids, batch_score):
                 #print(bscore)
                 my_score = bscore[1]
