@@ -558,6 +558,25 @@ They call this modified network BiDAF-T
 
 Then, they take the SQUAD dataset and break the context into sentences and labels each sentence as relevant or irrelevant. This new dataset is called SQUAD-T
 
+**How it works:**
+SQUAD dataset is for span level QA
+
+    passage: "Bob went to the doctor. He wasn't feeling too good"
+    question: "Who went to the doctor"
+    span: "*Bob* went to the doctor. He wasn't feeling too good"
+
+This can be remodelled such that:
+
+	question : "Who went to the doctor"
+	doc1 : "Bob went to the doctor."
+	relevance : 1 (True)
+
+	question : "Who went to the doctor"
+	doc2 : "He wasn't feeling too good"
+	relevance : 0 (False)
+
+Effectively, we get a really big good dataset in the QA domain. The converted file is almost 110 MB.
+
 [TODO add table here]
 
 The new model, BiDAF-T is then trained on SQUAD-T. It gets **MAP : 0.75** on WikiQA test set.  

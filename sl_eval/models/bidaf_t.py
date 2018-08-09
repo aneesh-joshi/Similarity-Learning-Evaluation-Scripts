@@ -1,3 +1,48 @@
+"""This file conatains an implementation of the BiDAF-T model introduced in the QA-Transfer paper
+
+You can read more here:
+Question Answering through Transfer Learning from Large Fine-grained Supervision Data
+https://arxiv.org/pdf/1702.02171.pdf
+
+The above paper claims that pretraining the BiDirectional Attention (https://arxiv.org/abs/1611.01603) with the SQUAD dataset
+for span supervision and then converting the model to a QA model by changing the last layer (making BiDAF -> BiDAF-T) and further
+finetuning it leads to great results (0.79 MAP on WikiQA)
+
+It also claims pretraining the BiDAF-T model on SQUAD-T (a QA version of SQUAD (read more in misc_scripts/squad2QA.py))
+and fine tuning on WikiQA train gets 0.76 MAP on WikiQA test.
+This script is an attempt to reproduce this claim.
+
+Beware: This doesn't implement any pretraining on span level QA at. My though process is "if I can reproduce the result with just SQUAD-T dataset,
+that will itself be SOTA. If it works, there might be a point in investing in Span level QA." So, far the result wasn't reprocuded. :(
+
+
+Notes
+------
+It's important to understand that the BiDAF model takes inputs in the format
+question = (batch_size, num_question_words)
+passage = (batch_size, num_passage_sentences, num_passage_words)
+
+Effectively, a passage is of the form:
+question = [["who", "is", "there", PAD]]
+(1, 4) -- (batch_size, num_question_words)
+
+passage = [["Hello", "there", PAD, PAD, PAD],
+           ["General", "Kenobi", "Sir", PAD, PAD],
+           [PAD, PAD, PAD, PAD, PAD ]]
+
+(1, 3, 5) -- (batch_size, num_passage_sentences, num_passage_words)
+
+Notice that the words have been padded to length 5 and the last sentence is padded fully since the num_passage_words is
+set to 3(say).
+
+In the original implementaion, this is masked. However, I haven't masked it in this implemenatation and hope that the model will learn to
+ignore it. There are 2 reasons I didn't mask it:
+1. I currently don't know how to and it will take some time to learn it. Maybe a TODO
+2. It will complicate the implementation which I have tried to keep extremely simple
+
+"""
+
+
 from keras.layers import Input, Embedding, Dense, Concatenate, TimeDistributed,\
                          LSTM, Bidirectional, Lambda, Reshape, Activation, Masking, Conv1D
 from keras.models import Model
@@ -86,19 +131,6 @@ class BiDAF_T:
         self.build_vocab()
         self.train()
 
-
-
-# # Text Preprocessing
-# q_iterable = MyWikiIterable('query', os.path.join('experimental_data', 'SQUAD-T-QA.tsv'))
-# d_iterable = MyWikiIterable('doc', os.path.join('experimental_data', 'SQUAD-T-QA.tsv'))
-# l_iterable = MyWikiIterable('label', os.path.join('experimental_data', 'SQUAD-T-QA.tsv'))
-
-# q_train_iterable = MyWikiIterable('query', os.path.join('experimental_data', 'WikiQACorpus', 'WikiQA-train.tsv'))
-# d_train_iterable = MyWikiIterable('doc', os.path.join('experimental_data', 'WikiQACorpus', 'WikiQA-train.tsv'))
-# l_train_iterable = MyWikiIterable('label', os.path.join('experimental_data', 'WikiQACorpus', 'WikiQA-train.tsv'))
-
-
-
     def build_vocab(self):
     
         n_queries, n_docs = 0, 0
@@ -118,14 +150,6 @@ class BiDAF_T:
                 n_docs += 1
                 word_counter.update(d)
                 doc_lens.append(len(d))
-
-        # import matplotlib.pyplot as plt
-        # plt.hist(q_lens)
-        # plt.show()
-        # plt.hist(doc_lens)
-        # plt.show()
-        # plt.hist(n_docs_per_query)
-        # plt.show()
 
         self.vocab_size = len(word_counter)
         logger.info('There are %d vocab words in the training data', self.vocab_size)
@@ -157,8 +181,8 @@ class BiDAF_T:
             num_embedding_words, num_non_embedding_words
         )
 
-        self.embedding_matrix = np.zeros((1 + len(self.kv_model.vocab) + 1 + num_embedding_words , self.kv_model.vector_size))
         # 1 for pad word, 1 for unk_word in non-train data
+        self.embedding_matrix = np.zeros((1 + len(self.kv_model.vocab) + 1 + num_embedding_words , self.kv_model.vector_size))
 
         if self.pad_handle_method == 'zero':
             self.embedding_matrix[self.pad_word_index] = np.zeros((self.kv_model.vector_size))
@@ -192,7 +216,12 @@ class BiDAF_T:
 
 
     def _char_word(self, word):
-        """Converts a str word into a list of its character indices with pads"""
+        """Converts a str word into a list of its character indices with pads
+
+        Parameters
+        ----------
+        word : str
+        """
         list_word = list(word)
         indexed_word = [self.char2index[l] for l in list_word]
         indexed_word = indexed_word + (self.max_word_charlen - len(indexed_word))*[self.char_pad_index]
@@ -201,30 +230,6 @@ class BiDAF_T:
                          word, len(indexed_word), self.max_word_charlen)
             indexed_word = indexed_word[:self.max_word_charlen]
         return indexed_word
-
-    def _make_sentence_indexed_padded_charred(self, sentence, max_len):
-        """Returns a list of ints for a given list of strings
-        
-        Parameters
-        ----------
-        sentence : list of str
-
-        Usage
-        -----
-        >>>_make_sentence_indexed_padded('I am Aneesh and I like chicken'.split(), max_passage_words)
-        [23794, 1601, 23794, 115, 23794, 764, 19922, 0, 0, 0, 0, 0]
-        """
-        assert type(sentence) == list
-        
-        str_sent = sentence
-        sentence = [self._char_word(word) for word in sentence]
-        while len(sentence) < max_len:
-            sentence += [[self.char_pad_index] * self.max_word_charlen]
-        if len(sentence) > max_len:
-            logger.info("Max length of %d wasn't long enough for sentence:%s of length %d. Truncating sentence for now",
-                max_len, str(str_sent), len(sentence))
-            sentence = sentence[:max_len]
-        return sentence
 
 
     def _make_sentence_indexed_padded(self, sentence, max_len):
@@ -251,71 +256,35 @@ class BiDAF_T:
             sentence = sentence[:max_len]
         return sentence
 
-    def train_batch_generator(self, queries, docs, labels, batch_size):
-        '''Yields a batch for training
-        query: (batch_size, max_question_words)
-        docs: (batch_size, max_passage_sents*max_passage_words)
-        label: (batch_size, max_passage_sents, 1, 2)
-        '''
-        while True:
-            cbatch_q, cbatch_d, cbatch_l = [], [], []
-            ctrain_qs, ctrain_ds, ctrain_ls = [], [], []
-            batch_q, batch_d, batch_l = [], [], []
-            train_qs, train_ds, train_ls = [], [], []
-            
-            for i, (q, docs, labels) in enumerate(zip(queries, docs, labels)):
-
-                if i % self.batch_size == 0 and i != 0:
-                    bq, bd, bl = np.array(batch_q), np.array(batch_d), np.array(batch_l)
-                    cbq, cbd, cbl = np.array(cbatch_q), np.array(cbatch_d), np.array(cbatch_l)
-
-                    bd = bd.reshape((-1, total_passage_words))
-                    bl = np.squeeze(bl)
-                    bq = np.squeeze(bq)
-
-                    cbd = cbd.reshape((-1, total_passage_words, max_word_charlen))
-                    cbl = np.squeeze(cbl)
-                    cbq = np.squeeze(cbq)
-
-                    yield ({'question_input': bq, 'passage_input': bd, 'char_question_input': cbq, 'char_passage_input': cbd}, bl)
-                    batch_q, batch_d, batch_l = [], [], []
-                    cbatch_q, cbatch_d, cbatch_l = [], [], []
-
-                for d, l in zip(docs, labels):
-                    train_qs.append(_make_sentence_indexed_padded(q, max_question_words))
-                    ctrain_qs.append(_make_sentence_indexed_padded_charred(q, max_question_words))
-                    train_ds.append(_make_sentence_indexed_padded(d, self.max_passage_words))
-                    ctrain_ds.append(_make_sentence_indexed_padded_charred(d, self.max_passage_words))
-                    train_ls.append(to_categorical(l, 2))
-
-                # Add extra sentences in the passage to make it of the same length and set them to false
-                while(len(train_ds) < self.max_passage_sents):
-                    train_ds.append([self.pad_word_index] * self.max_passage_words)
-                    ctrain_ds.append([[char_pad_index]*max_word_charlen] * self.max_passage_words)
-                    train_ls.append(to_categorical(0, 2))
-
-                if len(train_ds) > self.max_passage_sents:
-                    raise ValueError("%d max_passage_sents isn't long enough for num docs %d" % (self.max_passage_sents, len(train_ds)))
-
-                batch_q.append(train_qs)
-                batch_d.append(train_ds)
-                batch_l.append(train_ls)
-
-                cbatch_q.append(ctrain_qs)
-                cbatch_d.append(ctrain_ds)
-                cbatch_l.append(ctrain_ls)
-
-                train_qs, train_ds, train_ls = [], [], []
-                ctrain_qs, ctrain_ds, ctrain_ls = [], [], []
-            logger.info('One epoch worth of samples are exhausted')
+    def _make_sentence_indexed_padded_charred(self, sentence, max_len):
+        """Returns a list of list of ints for a given list of strings
+        Same as _make_sentence_indexed_padded except each word is a list of ints
+        padded to max_word_charlen
+                
+        Parameters
+        ----------
+        sentence : list of str
+        """
+        assert type(sentence) == list
+        
+        str_sent = sentence
+        sentence = [self._char_word(word) for word in sentence]
+        while len(sentence) < max_len:
+            sentence += [[self.char_pad_index] * self.max_word_charlen]
+        if len(sentence) > max_len:
+            logger.info("Max length of %d wasn't long enough for sentence:%s of length %d. Truncating sentence for now",
+                max_len, str(str_sent), len(sentence))
+            sentence = sentence[:max_len]
+        return sentence
 
     def _get_full_batch_iter(self, pair_list, batch_size):
         """Returns batches with alternate positive and negative docs taken from
-        the `pair_list`
+        the `pair_list`. Since each question has a positive and neagative counter part,
+        we divide batch_size by 2 (batch_size // 2 * 2)
         """
         X1, X2, y = [], [], []
         cX1, cX2 = [], []
-        batch_size = batch_size/2
+        batch_size = batch_size//2
         while True:
             for i, (query, pos_doc, neg_doc, cquery, cpos_doc, cneg_doc) in enumerate(pair_list):
                 X1.append(query)
@@ -342,6 +311,16 @@ class BiDAF_T:
 
 
     def _get_pair_list(self, queries, docs, labels):
+        """Yields a character and word based indexed pair list of the format
+        question, pos_doc, negative_doc
+
+        Parameters
+        ----------
+        queries : list of list of str
+        docs : list of list of list of str
+        labels : list of list of list of int
+
+        """
         while True:
             for q, doc, label in zip(queries, docs, labels):
                 doc, label = (list(t) for t in zip(*sorted(zip(doc, label), reverse=True)))
@@ -372,7 +351,8 @@ class BiDAF_T:
     def _get_model(self, max_passage_sents, max_passage_words, max_question_words, embedding_matrix, n_highway_layers=2,
             highway_activation='relu', embed_trainable=False, n_encoder_hidden_nodes=200, filters=100, depth=5,
             max_word_charlen=25, char_embedding_dim=8):
-        
+        """Returns a keras model as per the BiDAF-T architecture"""
+
         total_passage_words = max_passage_sents * max_passage_words
 
         # (batch_size, max_question_words)
@@ -491,6 +471,7 @@ class BiDAF_T:
         return model
 
     def train(self, queries=None, docs=None, labels=None, n_epochs=None, steps_per_epoch=None, batch_size=None):
+        """Trains the model on the existing or given queries, docs and labels"""
 
         # If you're building for the first time
         if self.model is None:
@@ -516,7 +497,25 @@ class BiDAF_T:
 
 
     def batch_predict(self, q, doc):
+        """Returns predictions on a query and doc batch
 
+        Parameters
+        ----------
+        q : list of list of str
+        doc : lit of list of list of str
+
+        Example
+        -------
+        q = [['hello', 'there']]
+        doc = [['general', 'kenobi'],
+             ['i', 'am', 'he']]
+
+        Predictions would be like
+        [[0.1, 0.9],  # 90% probablity of this sentence being the correct answer
+         [0.7, 0.3]]  # 30% probablity of this sentence being the correct answer
+
+        Effectively, we can rank the answers with the 90% and 30%
+        """
         wq, cq = [], []
         test_docs, ctest_docs = [], []
         num_docs = len(doc)
@@ -534,48 +533,6 @@ class BiDAF_T:
         ctest_docs = np.array(ctest_docs).reshape((num_docs, self.total_passage_words, self.max_word_charlen))
 
         preds = self.model.predict(x={'question_input':wq,  'passage_input':test_docs,
-                                 'char_passage_input': ctest_docs, 'char_question_input': cq})
-
+                                      'char_passage_input': ctest_docs, 'char_question_input': cq})
         return preds
-
-# def test_generator():
-#     batch_q, batch_d, batch_l = [], [], []
-#     train_qs, train_ds, train_ls = [], [], []
-#     final_dlens, final_q, final_d = [], [], []
-#     doc_lens = []
-#     for i, (q, docs, labels) in enumerate(zip(queries, doc_group, label_group)):
-        
-#         if i % batch_size == 0 and i != 0:
-#             bq, bd, bl = np.array(batch_q), np.array(batch_d), np.array(batch_l)
-#             bd = bd.reshape((-1, total_passage_words))
-#             bl = np.squeeze(bl)
-#             bq = np.squeeze(bq)
-#             final_q.append(bq)
-#             final_d.append(bd)
-#             final_dlens.append(doc_lens)
-#             doc_lens = []
-#             batch_q, batch_d, batch_l = [], [], []
-#         train_qs.append(_make_sentence_indexed_padded(q, max_question_words))
-
-#         for d, l in zip(docs, labels):
-#             train_ds.append(_make_sentence_indexed_padded(d, max_passage_words))
-#             train_ls.append(to_categorical(l, 2))
-        
-#         doc_lens.append(len(train_ds))
-#         # Add extra sentences in the passage to make it of the same length and set them to false
-#         while(len(train_ds) < max_passage_sents):
-#             train_ds.append([self.pad_word_index] * max_passage_words)
-#             train_ls.append(to_categorical(0, 2))
-
-#         if len(train_ds) > max_passage_sents:
-#             raise ValueError("%d max_passage_sents isn't long enough for num docs %d" % (max_passage_sents, len(train_ds)))
-
-#         batch_q.append(train_qs)
-#         batch_d.append(train_ds)
-#         batch_l.append(train_ls)
-
-#         train_qs, train_ds, train_ls = [], [], []
-    
-#     return np.array(final_q), np.array(final_d), np.array(final_dlens)
-
 
