@@ -3,6 +3,7 @@
 import sys
 sys.path.append('..')
 
+import numpy as np
 from gensim import downloader as api
 from sklearn.utils import shuffle
 from sl_eval.models.matchpyramid import MatchPyramid
@@ -24,7 +25,7 @@ def w2v_similarity_fn(q, d):
     def sent2vec(sent):
         if len(sent)==0:
             print('length is 0, Returning random')
-            return np.random.random((dim_size,))
+            return np.random.random((kv_model.vector_size,))
 
         vec = []
         for word in sent:
@@ -102,7 +103,6 @@ if __name__ == '__main__':
 		num_total += 1
 	print('Word2Vec baseline accuracy is %f' % (100. * num_correct / num_total))
 
-	exit()
 
 	n_epochs = 10
 	batch_size = 100

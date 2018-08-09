@@ -158,7 +158,7 @@ if __name__ == '__main__':
 
         num_squad_samples = 53968
 
-        n_epochs = 2 
+        n_epochs = 20 
         batch_size = 100
         text_maxlen = 100
         steps_per_epoch_squad = num_squad_samples // batch_size
