@@ -24,7 +24,8 @@ wikiqa_url, wikiqa_file = "https://download.microsoft.com/download/E/5/F/E5FCFCE
 quoraqp_url, quoraqp_file = "http://qim.ec.quoracdn.net/", "quora_duplicate_questions.tsv"
 snli_url, snli_file = "https://nlp.stanford.edu/projects/snli/", "snli_1.0.zip"
 SICK_url, SICK_file = "http://clic.cimec.unitn.it/composes/materials/", "SICK.zip"
-
+SQUAD2_train_url, SQUAD2_train_file = "https://rajpurkar.github.io/SQuAD-explorer/dataset/", "train-v2.0.json"
+SQUAD1_train_url, SQUAD1_train_file = "wget https://rajpurkar.github.io/SQuAD-explorer/dataset/", "train-v1.1.json"
 InsuranceQA_git_link = "https://github.com/codekansas/insurance_qa_python.git"
 
 def download(url, file_name, output_dir, unzip=False):
