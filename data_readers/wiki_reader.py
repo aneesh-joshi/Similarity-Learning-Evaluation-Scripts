@@ -75,19 +75,11 @@ class WikiReaderIterable:
                 # If the question id index doesn't change
                 if self.data_rows[i][QUESTION_ID_INDEX] == self.data_rows[i + 1][QUESTION_ID_INDEX]:
                     document_group.append(self.preprocess_sent(self.data_rows[i][ANSWER_INDEX]))
-                    try:
-                        label_group.append(int(self.data_rows[i][LABEL_INDEX]))
-                    except:
-                        print(self.data_rows[i], i)
-                        exit()
+                    label_group.append(int(self.data_rows[i][LABEL_INDEX]))
                     n_relevant_docs += int(self.data_rows[i][LABEL_INDEX])
                 else:
                     document_group.append(self.preprocess_sent(self.data_rows[i][ANSWER_INDEX]))
-                    try:
-                        label_group.append(int(self.data_rows[i][LABEL_INDEX]))
-                    except:
-                        print(self.data_rows[i], i)
-                        exit()
+                    label_group.append(int(self.data_rows[i][LABEL_INDEX]))
 
                     n_relevant_docs += int(self.data_rows[i][LABEL_INDEX])
 

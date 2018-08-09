@@ -15,16 +15,21 @@ if __name__ == '__main__':
 	train_x1, train_x2, train_labels, train_annotator_labels = snli_reader.get_data('train')
 	test_x1, test_x2, test_labels, test_annotator_labels = snli_reader.get_data('test')
 
-	word_embedding_len = 50#300
+	word_embedding_len = 300
 	kv_model = api.load('glove-wiki-gigaword-' + str(word_embedding_len))
 
 	print('There are %d training samples' % len(train_x1))
 
+	if baseline:
 	batch_size = 15#50
 	text_maxlen = 200
 	n_epochs = 1#5 
 	steps_per_epoch = len(train_x1)//batch_size
 	steps_per_epoch = 1
+	batch_size = 50
+	text_maxlen = 200
+	n_epochs = 5 
+	steps_per_epoch = len(train_x1)//batch_size
 
 	mp_model = MatchPyramid(queries=train_x1, docs=train_x2, labels=train_labels, target_mode='inference',
 	                     word_embedding=kv_model, epochs=n_epochs, text_maxlen=text_maxlen, batch_size=batch_size, steps_per_epoch=steps_per_epoch)
@@ -33,11 +38,17 @@ if __name__ == '__main__':
 	print('Accuracy = %.2f' % accuracy*100)
 	print('Predicted %d correct out of a totol of %d' % (num_correct, num_total))
 
+	
 	batch_size = 15#50
 	text_maxlen = 200
 	n_epochs = 1#5 
 	steps_per_epoch = len(train_x1)//batch_size
 	steps_per_epoch = 1
+	
+	batch_size = 50
+	text_maxlen = 200
+	n_epochs = 5 
+	steps_per_epoch = len(train_x1)//batch_size
 
 	dtks_model = DRMM_TKS(queries=train_x1, docs=train_x2, labels=train_labels, target_mode='inference', word_embedding=kv_model,
 						  epochs=n_epochs, text_maxlen=text_maxlen, batch_size=batch_size, steps_per_epoch=steps_per_epoch)

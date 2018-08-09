@@ -5,7 +5,7 @@ This repo contains:
 - code for baselines on these datasets
 - a report with a detailed study of similarity learning
 
-Please refer to [Report.md](TODO) for the detailed study which explains what Similarity Learning is, the tasks that it involves and different models used for.
+Please refer to [Report.md](final_report.md) for the detailed study which explains what Similarity Learning is, the tasks that it involves and different models used for.
 
 ## Getting Started
 ### Downloading Datasets
@@ -30,5 +30,5 @@ can be found in the folder `sl_eval/models/`
 
 The folder `evaluation_scripts/` contains files and folders for running these models on different datasets.
 
-#### Note on running evaluation
+
 

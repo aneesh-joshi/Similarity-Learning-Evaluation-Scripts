@@ -156,8 +156,8 @@ if __name__ == '__main__':
     wikiqa_folder = os.path.join('..', '..', 'data', 'WikiQACorpus')
 
     squad_t_path = os.path.join('..', '..', 'data_readers', 'SQUAD-T-QA+.tsv')
-    squad_t_path = os.path.join('..', '..', 'data_readers', 'last_hop')
     
+
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--model_type', required=False, help='the model to be evaluated (mp, dtks, bidaf_t)')
@@ -192,7 +192,7 @@ if __name__ == '__main__':
     test_data = WikiReaderStatic(os.path.join(wikiqa_folder, 'WikiQA-test.tsv')).get_data()
 
     num_samples_wikiqa = 9000
-    num_embedding_dims = 50
+    num_embedding_dims = 300
     qrels_save_path = 'qrels_wikiqa'
     mp_pred_save_path = 'pred_mp_wikiqa'
     dtks_pred_save_path = 'pred_dtks_wikiqa'
@@ -214,6 +214,7 @@ if __name__ == '__main__':
         num_squad_samples = 447551
 
         n_epochs = 1
+
         batch_size = 100
         text_maxlen = 100
         steps_per_epoch_squad = num_squad_samples // batch_size
