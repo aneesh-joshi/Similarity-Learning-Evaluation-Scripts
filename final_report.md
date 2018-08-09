@@ -680,7 +680,7 @@ DRMM_TKS | 51.2 (Recheck)
 #### MatchPyramid
 
 
- | Test1 | Test2 | Word2Vec Baseline | Test1 Random Baseline | Test2 Random Baseline
+MP | Test1 | Test2 | Word2Vec Baseline | Test1 Random Baseline | Test2 Random Baseline
 -- | -- | -- | -- | -- | --
 map | 0.8103 | 0.8003 | 0.6975 | 0.4074 | 0.41
 gm_map | 0.727 | 0.7104 | 0.5793 | 0.3118 | 0.313
@@ -713,7 +713,7 @@ P_1000 | 0.0015 | 0.0014 | 0.0015 | 0.0015 | 0.0014
 #### DRMM_TKS
 
 
- | Test1 | Test2 | Word2Vec Baseline | Test1 Random Baseline | Test2 Random Baseline
+DTKS | Test1 | Test2 | Word2Vec Baseline | Test1 Random Baseline | Test2 Random Baseline
 -- | -- | -- | -- | -- | --
 map | 0.617 | 0.5998 | 0.7055 | 0.24 | 0.2414
 gm_map | 0.5024 | 0.4835 | 0.589 | 0.1879 | 0.1899
