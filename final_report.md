@@ -7,10 +7,11 @@
 4. Establishing Baselines
 5. About Datasets
 6. The journey
-7. Notes on Finetuning Models
-8. Thoughts on Deep Learning Models
-9. Conclusion
-10. Future Work
+7. Benchmarked Models
+8. Notes on Finetuning Models
+9. Thoughts on Deep Learning Models
+10. Conclusion
+11. Future Work
 
 
 ## 1. Problem Statement
@@ -616,7 +617,7 @@ I got 0.64 on average (getting a 0.67 at one point) but this isn't more than Mat
 	- [My Implmentation](https://github.com/aneesh-joshi/Similarity-Learning-Evaluation-Scripts/blob/master/evaluation_scripts/WikiQA/eval_wikiqa.py) (unable to reproduce BiDAF-T)
 
 
-## Benchmarked Data
+## 7. Benchmarked Models
 
 ### WikiQA
 
@@ -748,7 +749,7 @@ P_1000 | 0.0015 | 0.0014 | 0.0014 | 0.0015 | 0.0014
 
 
 
-## 7. Notes on Finetuning Models
+## 8. Notes on Finetuning Models
 Fine tuning deep learning models can be tough, considering the model runtimes and the number of parameters.  
 Here, I will list some parameters to consider while tuning:
 - The word vector dimensionality(50, 100, 200, 300) and source(Glove, GoogleNews)
@@ -757,13 +758,13 @@ Here, I will list some parameters to consider while tuning:
 - Running lesser vs more epochs
 - Bigger or Smaller Batch Sizes
 
-## 8. Thoughts on Deep Learning Models
+## 9. Thoughts on Deep Learning Models
 While the models seem to be doing the best currently, they are a bit difficult to reproduce. There are several reasons I can imagine for that:
 - Difference in Deep Learning Libraries and their versions used in implementations may vary or be outdated. Different libraries can have varying differences in small implementation details(like random initializations) which can lead to huge differences later on and are difficult to track.
 - The large number of parameters coupled with it's stochastic nature means that the model's performance can vary greatly. Include the time it takes to get one result makes tuning them very very difficult to tune.
 - "When a model doesn't perform well, is it because the model is wrong or is my implementation wrong?" This is a difficult question to answer.
 
-## 9. Conclusion
+## 10. Conclusion
 My time spent with understanding, developing and testing Neural Networks for Similarity Learning has brought out the conclusions that:
 - the current methods are not significantly better than a simple unsupervised word2vec baseline.
 - the current methods are unreproducible/difficult to reproduce.
@@ -772,7 +773,7 @@ This work and effort has provided:
 - implementations of some of the current SOTA models
 - a list of datasets to evaluate models on and their readers
 
-## 10. Future Work
+## 11. Future Work
 If anybody was to carry on with this work, I would recommend looking at the QA-Transfer model, which claims the current "State Of The Art". Although my implementation couldn't reproduce the result, I feel like there is some merit in the model. The reason for this belief is not based in QA-Transfer, but the underlying BiDAF model, which provides [two](http://demo.allennlp.org/machine-comprehension) [demos](http://allgood.cs.washington.edu:1995/) which does really well. Since there is so much discrepancies in different implementations, it would be better to use the [ported tf1.8 BiDAF](https://github.com/Vimos/bi-att-flow/tree/tf1.8)  
 If you are looking to do "newer research", I would recommend you do what the authors of QA-Transfer did. They looked at the best performing model on the SQUAD 1.1 dataset, pretrained on it, removed the last layer and evaluated. Things have changed since: There is a newer better SQUAD (2.0) and that leader board has got a new "best" model. In fact, BiDAF model is no longer the best on SQUAD 1.1 or 2.0. Just take the current best model and do the pretraining!
 If there's anything to take away from QA-Transfer, it's that span supervision and pretraining can be good ideas. This, especially, seems to be a new trend regarding [Language Models](http://ruder.io/nlp-imagenet/)  
