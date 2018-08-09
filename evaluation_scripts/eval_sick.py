@@ -6,8 +6,8 @@ sys.path.append('..')
 
 from data_readers import SickReader
 import gensim.downloader as api
-from sl_eval.models import MatchPyramid
-from sl_eval.models import DRMM_TKS
+from sl_eval.models import MatchPyramid, DRMM_TKS
+
 
 if __name__ == '__main__':
 	sick_folder_path = os.path.join('..', 'data', 'SICK')
@@ -20,7 +20,7 @@ if __name__ == '__main__':
 
 	steps_per_epoch = len(train_x1)//batch_size
 
-	word_embedding_len = 50
+	word_embedding_len = 300
 	kv_model = api.load('glove-wiki-gigaword-' + str(word_embedding_len))
 
 
@@ -33,7 +33,7 @@ if __name__ == '__main__':
 	num_correct, num_total, accuracy = mp_model.evaluate_inference(test_x1, test_x2, test_labels)
 	print('Results on MatchPyramid with SICK dataset')
 	print('Accuracy = %.2f' % accuracy*100)
-	print('Predicted %d correct out of a totol of %d' % (num_correct, num_total))
+	print('Predicted %d correct out of a total of %d' % (num_correct, num_total))
 
 	batch_size = 50
 	text_maxlen = 200
@@ -46,4 +46,4 @@ if __name__ == '__main__':
 	num_correct, num_total, accuracy = dtks_model.evaluate_inference(test_x1, test_x2, test_labels)
 	print('Results on DRMM_TKS with SICK dataset')
 	print('Accuracy = %.2f' % accuracy*100)
-	print('Predicted %d correct out of a totol of %d' % (num_correct, num_total))
+	print('Predicted %d correct out of a total of %d' % (num_correct, num_total))

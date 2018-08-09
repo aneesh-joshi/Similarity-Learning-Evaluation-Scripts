@@ -197,7 +197,10 @@ Let's take the previous example:
 
 As can be seen, if a high score is given
 
-For getting the Normalized Discounted [TODO]
+**For getting the Normalized Discounted:**
+> Since result set may vary in size among different queries or systems, to compare performances the normalised version of DCG uses an ideal DCG. To this end, it sorts documents of a result list by relevance, producing an ideal DCG at position p ( {\displaystyle IDCG_{p}} IDCG_p), which normalizes the score:
+
+nDCG = DCG / IDCG
 
 ### Should I use MAP or NDCG?
 Use MAP when you a candidate document is either relevant or not relevant (1 or 0)
@@ -298,7 +301,7 @@ The w2v 300 dim MAP score on the full set(100%) of WikiQA is 0.59<br/> train spl
 ### MatchZoo Baselines
 I had found a repo called [MatchZoo](https://github.com/faneshion/MatchZoo) which had almost 10 different Similarity Learning models developed and benchmarked. According to their benchmarks, their best model performed around 0.65 MAP on WikiQA.
 
-I tried to reproduce their results using their scripts but found that the scores weren't keeping up with what they advertised. I raised an [issue](https://github.com/faneshion/MatchZoo/issues/103). (There was a similar issue before mine as well.) They went about fixing it. I was later able to reproduce their results (by reverting to a point earlier in the commit history) but there was now a lack of trust in their results. I sought out to write my own script in order to make my evaluation independent of theirs. The problem was that they had their own way of representing words and other such internal functions. Luckily, they were dumping their results in the TREC format. I was able to scrape that and evaluate it using [this](TODO) script.
+I tried to reproduce their results using their scripts but found that the scores weren't keeping up with what they advertised. I raised an [issue](https://github.com/faneshion/MatchZoo/issues/103). (There was a similar issue before mine as well.) They went about fixing it. I was later able to reproduce their results (by reverting to a point earlier in the commit history) but there was now a lack of trust in their results. I sought out to write my own script in order to make my evaluation independent of theirs. The problem was that they had their own way of representing words and other such internal functions. Luckily, they were dumping their results in the TREC format. I was able to scrape that and evaluate it using [this](https://github.com/aneesh-joshi/Similarity-Learning-Evaluation-Scripts/blob/06af2545b3034fb28a125233ed7722d128855791/old_stuff/evaluate_models.py#L248) script.
 
 I developed a table with my baselines as below:
 
@@ -490,7 +493,7 @@ BiMPM | https://arxiv.org/pdf/1702.03814.pdf
 
 
 ## 6. My Journey
-After going through the initial evaluation, we decided to implement the DRMM TKS model, since it gave the best score (0.65 MAP on WikiQA) with acceptable memory usage and time for training. The first model was considerable important since it set the standard for all other models to follow. I had to learn and implement a lot of Software Engineering principles like doctest, docstrings, etc. This model also helped me set up the skeleton structure needed for any Similarity Learning model. The code can be found [here](TODO)
+After going through the initial evaluation, we decided to implement the DRMM TKS model, since it gave the best score (0.65 MAP on WikiQA) with acceptable memory usage and time for training. The first model was considerable important since it set the standard for all other models to follow. I had to learn and implement a lot of Software Engineering principles like doctest, docstrings, etc. This model also helped me set up the skeleton structure needed for any Similarity Learning model. The code can be found [here](https://github.com/aneesh-joshi/Similarity-Learning-Evaluation-Scripts/blob/master/sl_eval/models/drmm_tks.py)
 
 ### This is generally what needs to be done:
 
@@ -503,11 +506,11 @@ After going through the initial evaluation, we decided to implement the DRMM TKS
 	- While testing and validating, you will inevitably encounter an unkown word (a word not in your word2index dictionary). All these unkown words should be set to the same vector. Again, you can choose between a zero vector and a random vector.
 6. Once all the data is in the right format, we need to create a generator which will stream out batches of training examples (with padding added ofcourse). In the Question Answering context, there is a special consideration here. Usually, a training set will be of the form `[(q1, (d1, d2, d3), (q2, (d4, d5)))]` with the releavnce labels like `[(1, 0, 0), (0, 1)]`. While setting up training examples, it's a good idea to make training pairs like [(q, d_rel), (q, d_not_relevant), (q, d_relevant), ...]. This "should" help the model learn the correct classification by contrasting relevant and non relevant answers.
 7. Now that you batch generator is spitting out batches to train on, create a model, fix the loss, optimizer and other such parameters and train.
-8. The metrics usually reported by a library like Keras won't be very useful to evaluate your model as it trains. So, at the end of each epoch, you should set up your own callback as I have done in [this](TODO) line.
-9. Once the model training is done, evaluate it on the test set. You can obviously use your own implementation, but as a standard, it would be better to write your results into the TREC format as I have done [here](TODO) and then use the `trec_eval` binary described before for evaluating. This standardizes evaluation and makes it easier for others to trust the result.
-10. Saving models can get a bit tricky, especially if you're using keras. Keras prefers it's own way of saving against the satandard gensim `util.SaveLoad` You will have to save the keras model separate from the non-keras model and combine them while loading. Moreover, if you have any Lambda Layer, you will have to replace them with custom layers like I did [here](TODO) for the TopK Layer.
+8. The metrics usually reported by a library like Keras won't be very useful to evaluate your model as it trains. So, at the end of each epoch, you should set up your own callback as I have done [here](https://github.com/aneesh-joshi/Similarity-Learning-Evaluation-Scripts/blob/master/sl_eval/models/utils/custom_callbacks.py)
+9. Once the model training is done, evaluate it on the test set. You can obviously use your own implementation, but as a standard, it would be better to write your results into the TREC format as I have done [here](https://github.com/aneesh-joshi/Similarity-Learning-Evaluation-Scripts/blob/06af2545b3034fb28a125233ed7722d128855791/evaluation_scripts/WikiQA/eval_wikiqa.py#L224) and then use the `trec_eval` binary described before for evaluating. This standardizes evaluation and makes it easier for others to trust the result.
+10. Saving models can get a bit tricky, especially if you're using keras. Keras prefers it's own way of saving against the satandard gensim `util.SaveLoad` You will have to save the keras model separate from the non-keras model and combine them while loading. Moreover, if you have any Lambda Layer, you will have to replace them with custom layers like I did [here](https://github.com/aneesh-joshi/Similarity-Learning-Evaluation-Scripts/blob/master/sl_eval/models/utils/custom_layers.py) for the TopK Layer.
 
-Most of the above has been done in [my script](TODO) and you can mostly just use that skeleton while changing just the `_get_keras_model` function.
+Most of the above has been done in [my script](https://github.com/aneesh-joshi/Similarity-Learning-Evaluation-Scripts/blob/master/sl_eval/models/drmm_tks.py) and you can mostly just use that skeleton while changing just the `_get_keras_model` function.
 
 Once my DRMM_TKS model was set up, it was performing very poorly (0.54 on MAP). After trying every idea I could imagine for fine tuning it, I ended up with a model which performed 0.63 on MAP. Beyond this point, however, I didn't feel like any changes I made would make it perform any better. You are welcome to try.  
 Seeing that DRMM_TKS wasn't doing so well, I moved my attention to the next best performing model in my list of model, [MatchPyramid](https://arxiv.org/abs/1606.04648). This model, after some tuning, managed to score 0.64-0.65 MAP.
@@ -592,7 +595,7 @@ Since, 0.79 feels like a good score, significantly (0.17) over the w2v baseline,
 Unfortunately, the scores don't perform as well.
 
 **Steps invovled:**  
-I had to first convert the SQUAD dataset, a span level dataset, into a QA dataset. I have uploaded the new dataset and the script for conversion on my [repo](TODO). I then trained the BiDAF-T model on the SQUAD-T dataset to check if it did infact reach the elusive score of 
+I had to first convert the SQUAD dataset, a span level dataset, into a QA dataset. I have uploaded the new dataset and the script for conversion on my [repo](https://github.com/aneesh-joshi/Similarity-Learning-Evaluation-Scripts). I then trained the BiDAF-T model on the SQUAD-T dataset to check if it did infact reach the elusive score of 
 I got 0.64 on average (getting a 0.67 at one point) but this isn't more than MatchPyramid and it has several drawbacks:
 
 **Things to consider regarding QA Transfer/BiDAF:**  
@@ -605,46 +608,45 @@ I got 0.64 on average (getting a 0.67 at one point) but this isn't more than Mat
 	- [Original Tensorflow 0.11 Implementation](https://github.com/allenai/bi-att-flow)
 	- [AllenAI-DeepQA Keras Implementation (Now deprecated)](https://github.com/allenai/deep_qa)
 	- [AllenAI-AllenNLP PyTorch Implementation](https://github.com/allenai/allennlp)
-	- [Independent PyTorch Implementation by TODO](https://github.com/jojonki/BiDAF) (unable to reproduce BiDAF)
+	- [Independent PyTorch Implementation by @jojonki](https://github.com/jojonki/BiDAF) (unable to reproduce BiDAF)
 	- [Original Implementation Tensorflow 1.8 fork by @Vimos](https://github.com/Vimos/bi-att-flow/tree/tf1.8)
 - BiDAF-T code:
 	- [QA Transfer Original Repo (forked from BiDAF tensorflow)](https://github.com/shmsw25/qa-transfer)
 	- [QA Transfer Slightly modified fork (forked from BiDAF tensorflow)](https://github.com/pcgreat/qa-transfer)
-	- [My Implmentation](TODO) (unable to reproduce BiDAF-T)
+	- [My Implmentation](https://github.com/aneesh-joshi/Similarity-Learning-Evaluation-Scripts/blob/master/evaluation_scripts/WikiQA/eval_wikiqa.py) (unable to reproduce BiDAF-T)
 
 
 ## Benchmarked Data
 
-### WordEmbedding Baselines and Model on WikiQA
+### WikiQA
 
 
-WikiQA test set | w2v 50 dim | w2v 100 dim | w2v 200 dim | w2v 300 dim | FT 300 dim | MatchPyramid | DRMM_TKS | MatchPyramid Random Baseline | DRMM_TKS Random Baseline
--- | -- | -- | -- | -- | -- | -- | -- | -- | --
-map | 0.6016 | 0.6148 | 0.6285 | 0.6277 | 0.6199 | 0.6406 | 0.6311 | 0.5107 | 0.5394
-gm_map | 0.4642 | 0.4816 | 0.4972 | 0.4968 | 0.4763 | 0.5041 | 0.4928 | 0.3753 | 0.4111
-Rprec | 0.4318 | 0.4551 | 0.4709 | 0.4667 | 0.4715 | 0.4918 | 0.4752 | 0.3471 | 0.3512
-bpref | 0.4251 | 0.4457 | 0.4613 | 0.456 | 0.4642 | 0.4886 | 0.4768 | 0.3344 | 0.3469
-recip_rank | 0.6147 | 0.628 | 0.6419 | 0.6373 | 0.6336 | 0.6471 | 0.6401 | 0.519 | 0.5473
-iprec_at_recall_0.00 | 0.6194 | 0.6322 | 0.6469 | 0.6437 | 0.6375 | 0.6543 | 0.6447 | 0.5242 | 0.5534
-iprec_at_recall_0.10 | 0.6194 | 0.6322 | 0.6469 | 0.6437 | 0.6375 | 0.6543 | 0.6447 | 0.5242 | 0.5534
-iprec_at_recall_0.20 | 0.6194 | 0.6322 | 0.6469 | 0.6437 | 0.6375 | 0.6543 | 0.6447 | 0.5242 | 0.5534
-iprec_at_recall_0.30 | 0.6146 | 0.6269 | 0.6431 | 0.6401 | 0.6314 | 0.6505 | 0.6447 | 0.5213 | 0.5515
-iprec_at_recall_0.40 | 0.6125 | 0.6269 | 0.6404 | 0.6394 | 0.6293 | 0.6474 | 0.6425 | 0.5189 | 0.5488
-iprec_at_recall_0.50 | 0.6125 | 0.6269 | 0.6404 | 0.6394 | 0.6293 | 0.6474 | 0.6425 | 0.5189 | 0.5488
-iprec_at_recall_0.60 | 0.5937 | 0.6068 | 0.6196 | 0.6219 | 0.6115 | 0.6393 | 0.6255 | 0.5073 | 0.5348
-iprec_at_recall_0.70 | 0.5937 | 0.6068 | 0.6196 | 0.6219 | 0.6115 | 0.6393 | 0.6255 | 0.5073 | 0.5348
-iprec_at_recall_0.80 | 0.5914 | 0.6039 | 0.6175 | 0.619 | 0.6094 | 0.6368 | 0.6216 | 0.5049 | 0.5333
-iprec_at_recall_0.90 | 0.5914 | 0.6039 | 0.6175 | 0.619 | 0.6094 | 0.6368 | 0.6216 | 0.5049 | 0.5333
-iprec_at_recall_1.00 | 0.5914 | 0.6039 | 0.6175 | 0.619 | 0.6094 | 0.6368 | 0.6216 | 0.5049 | 0.5333
-P_5 | 0.1893 | 0.1951 | 0.1967 | 0.1975 | 0.1926 | 0.1984 | 0.1959 | 0.1704 | 0.1835
-P_10 | 0.1107 | 0.1111 | 0.1119 | 0.114 | 0.1119 | 0.1165 | 0.114 | 0.1095 | 0.1144
-P_15 | 0.0774 | 0.0776 | 0.0787 | 0.0787 | 0.0774 | 0.0787 | 0.0785 | 0.0787 | 0.0787
-P_20 | 0.0595 | 0.0597 | 0.0597 | 0.0597 | 0.0591 | 0.0599 | 0.0597 | 0.0603 | 0.0601
-ndcg_cut_1 | 0.4403 | 0.4486 | 0.4691 | 0.4587 | 0.4774 | 0.4938 | 0.4876 | 0.0402 | 0.0402
-ndcg_cut_3 | 0.5867 | 0.6077 | 0.6213 | 0.626 | 0.6033 | 0.6261 | 0.6209 | 0.0121 | 0.0121
-ndcg_cut_5 | 0.6417 | 0.6598 | 0.6722 | 0.6743 | 0.6593 | 0.6774 | 0.6684 | 0.006 | 0.006
-ndcg_cut_10 | 0.6825 | 0.693 | 0.7055 | 0.7102 | 0.6982 | 0.7228 | 0.7108 | 0.0024 | 0.0024
-ndcg_cut_20 | 0.6993 | 0.7101 | 0.7208 | 0.7211 | 0.7115 | 0.728 | 0.7223 | 0.0012 | 0.0012
+WikiQA test set	w2v 50 dim	w2v 100 dim	w2v 200 dim	w2v 300 dim	FT 300 dim	MatchPyramid	DRMM_TKS	MatchPyramid Random Baseline	DRMM_TKS Random Baseline	BiDAF only pretrain	BiDAF pretrain + finetune	BiDAF Random Baseline
+map	0.6016	0.6148	0.6285	0.6277	0.6199	0.6463	0.6354	0.5107	0.5394	0.601	0.5948	0.3291
+gm_map	0.4642	0.4816	0.4972	0.4968	0.4763	0.5071	0.4989	0.3753	0.4111	0.4538	0.4595	0.2455
+Rprec	0.4318	0.4551	0.4709	0.4667	0.4715	0.5007	0.4801	0.3471	0.3512	0.4582	0.4355	0.1156
+bpref	0.4251	0.4457	0.4613	0.456	0.4642	0.4977	0.4795	0.3344	0.3469	0.4502	0.4264	0.1101
+recip_rank	0.6147	0.628	0.6419	0.6373	0.6336	0.6546	0.6437	0.519	0.5473	0.6169	0.6093	0.3312
+iprec_at_recall_0.00	0.6194	0.6322	0.6469	0.6437	0.6375	0.6602	0.648	0.5242	0.5534	0.6209	0.6134	0.3396
+iprec_at_recall_0.10	0.6194	0.6322	0.6469	0.6437	0.6375	0.6602	0.648	0.5242	0.5534	0.6209	0.6134	0.3396
+iprec_at_recall_0.20	0.6194	0.6322	0.6469	0.6437	0.6375	0.6602	0.648	0.5242	0.5534	0.6209	0.6134	0.3396
+iprec_at_recall_0.30	0.6146	0.6269	0.6431	0.6401	0.6314	0.6572	0.648	0.5213	0.5515	0.618	0.6082	0.3382
+iprec_at_recall_0.40	0.6125	0.6269	0.6404	0.6394	0.6293	0.6537	0.6458	0.5189	0.5488	0.6141	0.6069	0.3382
+iprec_at_recall_0.50	0.6125	0.6269	0.6404	0.6394	0.6293	0.6537	0.6458	0.5189	0.5488	0.6141	0.6069	0.3382
+iprec_at_recall_0.60	0.5937	0.6068	0.6196	0.6219	0.6115	0.6425	0.6296	0.5073	0.5348	0.5891	0.5841	0.3289
+iprec_at_recall_0.70	0.5937	0.6068	0.6196	0.6219	0.6115	0.6425	0.6296	0.5073	0.5348	0.5891	0.5841	0.3289
+iprec_at_recall_0.80	0.5914	0.6039	0.6175	0.619	0.6094	0.6401	0.627	0.5049	0.5333	0.5868	0.5838	0.3263
+iprec_at_recall_0.90	0.5914	0.6039	0.6175	0.619	0.6094	0.6401	0.627	0.5049	0.5333	0.5868	0.5838	0.3263
+iprec_at_recall_1.00	0.5914	0.6039	0.6175	0.619	0.6094	0.6401	0.627	0.5049	0.5333	0.5868	0.5838	0.3263
+P_5	0.1893	0.1951	0.1967	0.1975	0.1926	0.1967	0.1934	0.1704	0.1835	0.1852	0.1909	0.1473
+P_10	0.1107	0.1111	0.1119	0.114	0.1119	0.1156	0.1152	0.1095	0.1144	0.1115	0.1128	0.1033
+P_15	0.0774	0.0776	0.0787	0.0787	0.0774	0.079	0.0785	0.0787	0.0787	0.079	0.079	0.0749
+P_20	0.0595	0.0597	0.0597	0.0597	0.0591	0.0599	0.0591	0.0603	0.0601	0.0601	0.0601	0.0591
+ndcg_cut_1	0.4403	0.4486	0.4691	0.4587	0.4774	0.0402	0.0402	0.0402	0.0402	0.0402	0.0402	0.0402
+ndcg_cut_3	0.5867	0.6077	0.6213	0.626	0.6033	0.0121	0.0121	0.0121	0.0121	0.0121	0.0121	0.0121
+ndcg_cut_5	0.6417	0.6598	0.6722	0.6743	0.6593	0.006	0.006	0.006	0.006	0.006	0.006	0.006
+ndcg_cut_10	0.6825	0.693	0.7055	0.7102	0.6982	0.0024	0.0024	0.0024	0.0024	0.0024	0.0024	0.0024
+ndcg_cut_20	0.6993	0.7101	0.7208	0.7211	0.7115	0.0012	0.0012	0.0012	0.0012	0.0012	0.0012	0.0012
 
 
 ### Quora Duplicate Questions
@@ -654,6 +656,7 @@ ndcg_cut_20 | 0.6993 | 0.7101 | 0.7208 | 0.7211 | 0.7115 | 0.728 | 0.7223 | 0.00
 -- | --
 MatchPyramid | 69.20%
 DRMM TKS | 67.05
+Word2Vec Baseline | 37.02%
 
 
 
@@ -676,69 +679,69 @@ DRMM_TKS | 51.2 (Recheck)
 
 #### MatchPyramid
 
-  | Test1 | Test2 | Test1 Random Baseline | Test2 Random Baseline
--- | -- | -- | -- | --
-map | 0.8103 | 0.8003 | 0.4074 | 0.41
-gm_map | 0.727 | 0.7104 | 0.3118 | 0.313
-Rprec | 0.7124 | 0.7005 | 0.2274 | 0.2294
-bpref | 0.7177 | 0.7065 | 0.2175 | 0.2195
-recip_rank | 0.8348 | 0.8269 | 0.4295 | 0.4374
-iprec_at_recall_0.00 | 0.8413 | 0.8316 | 0.444 | 0.4501
-iprec_at_recall_0.10 | 0.8413 | 0.8316 | 0.444 | 0.4501
-iprec_at_recall_0.20 | 0.8412 | 0.8314 | 0.4437 | 0.4499
-iprec_at_recall_0.30 | 0.8398 | 0.8294 | 0.4411 | 0.4471
-iprec_at_recall_0.40 | 0.834 | 0.8225 | 0.4305 | 0.437
-iprec_at_recall_0.50 | 0.8336 | 0.8224 | 0.4303 | 0.4368
-iprec_at_recall_0.60 | 0.7967 | 0.7853 | 0.3963 | 0.3943
-iprec_at_recall_0.70 | 0.7964 | 0.7851 | 0.3961 | 0.3939
-iprec_at_recall_0.80 | 0.7847 | 0.7741 | 0.3874 | 0.3842
-iprec_at_recall_0.90 | 0.7841 | 0.7731 | 0.3868 | 0.3835
-iprec_at_recall_1.00 | 0.7841 | 0.7731 | 0.3868 | 0.3835
-P_5 | 0.2642 | 0.2596 | 0.174 | 0.1739
-P_10 | 0.1453 | 0.1441 | 0.1453 | 0.1441
-P_15 | 0.0969 | 0.096 | 0.0969 | 0.096
-P_20 | 0.0727 | 0.072 | 0.0727 | 0.072
-P_30 | 0.0484 | 0.048 | 0.0484 | 0.048
-P_100 | 0.0145 | 0.0144 | 0.0145 | 0.0144
-P_200 | 0.0073 | 0.0072 | 0.0073 | 0.0072
-P_500 | 0.0029 | 0.0029 | 0.0029 | 0.0029
-P_1000 | 0.0015 | 0.0014 | 0.0015 | 0.0014
+
+ | Test1 | Test2 | Word2Vec Baseline | Test1 Random Baseline | Test2 Random Baseline
+-- | -- | -- | -- | -- | --
+map | 0.8103 | 0.8003 | 0.6975 | 0.4074 | 0.41
+gm_map | 0.727 | 0.7104 | 0.5793 | 0.3118 | 0.313
+Rprec | 0.7124 | 0.7005 | 0.5677 | 0.2274 | 0.2294
+bpref | 0.7177 | 0.7065 | 0.569 | 0.2175 | 0.2195
+recip_rank | 0.8348 | 0.8269 | 0.7272 | 0.4295 | 0.4374
+iprec_at_recall_0.00 | 0.8413 | 0.8316 | 0.7329 | 0.444 | 0.4501
+iprec_at_recall_0.10 | 0.8413 | 0.8316 | 0.7329 | 0.444 | 0.4501
+iprec_at_recall_0.20 | 0.8412 | 0.8314 | 0.7329 | 0.4437 | 0.4499
+iprec_at_recall_0.30 | 0.8398 | 0.8294 | 0.7316 | 0.4411 | 0.4471
+iprec_at_recall_0.40 | 0.834 | 0.8225 | 0.7241 | 0.4305 | 0.437
+iprec_at_recall_0.50 | 0.8336 | 0.8224 | 0.7238 | 0.4303 | 0.4368
+iprec_at_recall_0.60 | 0.7967 | 0.7853 | 0.6813 | 0.3963 | 0.3943
+iprec_at_recall_0.70 | 0.7964 | 0.7851 | 0.6812 | 0.3961 | 0.3939
+iprec_at_recall_0.80 | 0.7847 | 0.7741 | 0.6662 | 0.3874 | 0.3842
+iprec_at_recall_0.90 | 0.7841 | 0.7731 | 0.6652 | 0.3868 | 0.3835
+iprec_at_recall_1.00 | 0.7841 | 0.7731 | 0.6652 | 0.3868 | 0.3835
+P_5 | 0.2642 | 0.2596 | 0.243 | 0.174 | 0.1739
+P_10 | 0.1453 | 0.1441 | 0.1453 | 0.1453 | 0.1441
+P_15 | 0.0969 | 0.096 | 0.0969 | 0.0969 | 0.096
+P_20 | 0.0727 | 0.072 | 0.0727 | 0.0727 | 0.072
+P_30 | 0.0484 | 0.048 | 0.0484 | 0.0484 | 0.048
+P_100 | 0.0145 | 0.0144 | 0.0145 | 0.0145 | 0.0144
+P_200 | 0.0073 | 0.0072 | 0.0073 | 0.0073 | 0.0072
+P_500 | 0.0029 | 0.0029 | 0.0029 | 0.0029 | 0.0029
+P_1000 | 0.0015 | 0.0014 | 0.0015 | 0.0015 | 0.0014
+
 
 
 #### DRMM_TKS
 
 
-  | Test1 | Test2 | Test1 Random Baseline | Test2 Random Baseline
--- | -- | -- | -- | --
-num_q | 1800 | 1800 | 1800 | 1800
-num_ret | 18000 | 18000 | 18000 | 18000
-num_rel | 2616 | 2593 | 2616 | 2593
-num_rel_ret | 2616 | 2593 | 2616 | 2593
-map | 0.617 | 0.5998 | 0.24 | 0.2414
-gm_map | 0.5024 | 0.4835 | 0.1879 | 0.1899
-Rprec | 0.4516 | 0.4372 | 0.0806 | 0.0829
-bpref | 0.4532 | 0.4377 | 0.0728 | 0.0743
-recip_rank | 0.6496 | 0.6301 | 0.2476 | 0.2488
-iprec_at_recall_0.00 | 0.6575 | 0.6396 | 0.2682 | 0.2698
-iprec_at_recall_0.10 | 0.6575 | 0.6396 | 0.2682 | 0.2698
-iprec_at_recall_0.20 | 0.6573 | 0.6394 | 0.2676 | 0.2697
-iprec_at_recall_0.30 | 0.6547 | 0.6379 | 0.2659 | 0.268
-iprec_at_recall_0.40 | 0.6475 | 0.6293 | 0.2589 | 0.2611
-iprec_at_recall_0.50 | 0.6473 | 0.6289 | 0.2589 | 0.2611
-iprec_at_recall_0.60 | 0.6 | 0.5825 | 0.2383 | 0.2391
-iprec_at_recall_0.70 | 0.5995 | 0.5822 | 0.2381 | 0.2391
-iprec_at_recall_0.80 | 0.5833 | 0.5694 | 0.2362 | 0.2364
-iprec_at_recall_0.90 | 0.5819 | 0.5688 | 0.2357 | 0.2363
-iprec_at_recall_1.00 | 0.5819 | 0.5688 | 0.2357 | 0.2363
-P_5 | 0.2352 | 0.2292 | 0.0804 | 0.0856
-P_10 | 0.1453 | 0.1441 | 0.1453 | 0.1441
-P_15 | 0.0969 | 0.096 | 0.0969 | 0.096
-P_20 | 0.0727 | 0.072 | 0.0727 | 0.072
-P_30 | 0.0484 | 0.048 | 0.0484 | 0.048
-P_100 | 0.0145 | 0.0144 | 0.0145 | 0.0144
-P_200 | 0.0073 | 0.0072 | 0.0073 | 0.0072
-P_500 | 0.0029 | 0.0029 | 0.0029 | 0.0029
-P_1000 | 0.0015 | 0.0014 | 0.0015 | 0.0014
+ | Test1 | Test2 | Word2Vec Baseline | Test1 Random Baseline | Test2 Random Baseline
+-- | -- | -- | -- | -- | --
+map | 0.617 | 0.5998 | 0.7055 | 0.24 | 0.2414
+gm_map | 0.5024 | 0.4835 | 0.589 | 0.1879 | 0.1899
+Rprec | 0.4516 | 0.4372 | 0.5773 | 0.0806 | 0.0829
+bpref | 0.4532 | 0.4377 | 0.58 | 0.0728 | 0.0743
+recip_rank | 0.6496 | 0.6301 | 0.7362 | 0.2476 | 0.2488
+iprec_at_recall_0.00 | 0.6575 | 0.6396 | 0.7413 | 0.2682 | 0.2698
+iprec_at_recall_0.10 | 0.6575 | 0.6396 | 0.7413 | 0.2682 | 0.2698
+iprec_at_recall_0.20 | 0.6573 | 0.6394 | 0.7413 | 0.2676 | 0.2697
+iprec_at_recall_0.30 | 0.6547 | 0.6379 | 0.7402 | 0.2659 | 0.268
+iprec_at_recall_0.40 | 0.6475 | 0.6293 | 0.7319 | 0.2589 | 0.2611
+iprec_at_recall_0.50 | 0.6473 | 0.6289 | 0.7317 | 0.2589 | 0.2611
+iprec_at_recall_0.60 | 0.6 | 0.5825 | 0.6869 | 0.2383 | 0.2391
+iprec_at_recall_0.70 | 0.5995 | 0.5822 | 0.6866 | 0.2381 | 0.2391
+iprec_at_recall_0.80 | 0.5833 | 0.5694 | 0.6734 | 0.2362 | 0.2364
+iprec_at_recall_0.90 | 0.5819 | 0.5688 | 0.6731 | 0.2357 | 0.2363
+iprec_at_recall_1.00 | 0.5819 | 0.5688 | 0.6731 | 0.2357 | 0.2363
+P_5 | 0.2352 | 0.2292 | 0.2426 | 0.0804 | 0.0856
+P_10 | 0.1453 | 0.1441 | 0.1441 | 0.1453 | 0.1441
+P_15 | 0.0969 | 0.096 | 0.096 | 0.0969 | 0.096
+P_20 | 0.0727 | 0.072 | 0.072 | 0.0727 | 0.072
+P_30 | 0.0484 | 0.048 | 0.048 | 0.0484 | 0.048
+P_100 | 0.0145 | 0.0144 | 0.0144 | 0.0145 | 0.0144
+P_200 | 0.0073 | 0.0072 | 0.0072 | 0.0073 | 0.0072
+P_500 | 0.0029 | 0.0029 | 0.0029 | 0.0029 | 0.0029
+P_1000 | 0.0015 | 0.0014 | 0.0014 | 0.0015 | 0.0014
+
+
 
 
 ## 7. Notes on Finetuning Models
