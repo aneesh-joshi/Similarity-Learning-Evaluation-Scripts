@@ -1,3 +1,38 @@
+"""Script to evaluate models on the WikiQA dataset
+
+This script will train the specified model on the WikiQA train set and provide predictions on the WikiQA test set in the TREC format.
+The TREC format includes a "qrels" and a "pred" file
+
+It can then be evaluated using
+./trec_eval qrels pred
+
+(Get trec_eval from misc_scripts/)
+
+The script will automatically save the qrels and pred file with a distinguishable name.
+For example,
+pred_mp_wikiqa : pred file of MatchPyramid model on WikiQA test
+pred_bidaf_t_wikiqa : pred file of BiDAF_T model on WikiQA test after pretraining on SQUAD-T
+pred_bidaf_t_finetuned_wikiqa : pred file of BiDAF_T on WikiQA test after pretraining on SQUAD-T and finetuning on WikiQA train
+
+Since we have a predefined split of WikiQA into test, train and dev (unlike InsuranceQA) the qrels file will always be the
+same for all the models.
+
+
+Example Usage
+-------------
+$ python eval_wikiqa.py  # evaluates on MatchPyramid, DRMM_TKS, BiDAF_T
+
+$ python eval_wikiqa.py --model_type mp  # evaluates on MatchPyramid
+
+model_type : {mp, dtks, bidaf_t}
+
+mp : MatchPyramid
+dtks : DRMM_TKS
+bidaf_t : BiDirectional Attention Flow (senTence level)
+
+"""
+
+
 import sys
 sys.path.append('../..')
 import sys
@@ -6,6 +41,7 @@ import os
 from sl_eval.models import MatchPyramid, DRMM_TKS, BiDAF_T
 from data_readers import WikiReaderIterable, WikiReaderStatic
 import gensim.downloader as api
+import argparse
 
 def save_qrels(test_data, fname):
     """Saves the WikiQA data `Truth Data`. This remains the same regardless of which model you use.
@@ -122,7 +158,24 @@ if __name__ == '__main__':
     squad_t_path = os.path.join('..', '..', 'data_readers', 'SQUAD-T-QA+.tsv')
     squad_t_path = os.path.join('..', '..', 'data_readers', 'last_hop')
     
-    do_bidaf, do_mp, do_dtks = True, False, False
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--model_type', required=False, help='the model to be evaluated (mp, dtks, bidaf_t)')
+    args = parser.parse_args()
+
+    model_type = args.model_type
+
+    do_bidaf_t, do_mp, do_dtks = False, False, False
+    if model_type == 'dtks':
+        do_bidaf_t = True
+    elif model_type == 'mp':
+        do_mp = True
+    elif model_type == 'bidaf_t':
+        do_bidaf_t = True
+    else:  # Evaluate all
+        do_bidaf_t, do_mp, do_dtks = True, True, True
+        
+
 
     q_iterable = WikiReaderIterable('query', os.path.join(wikiqa_folder, 'WikiQA-train.tsv'))
     d_iterable = WikiReaderIterable('doc', os.path.join(wikiqa_folder, 'WikiQA-train.tsv'))
@@ -153,7 +206,7 @@ if __name__ == '__main__':
 
 
 
-    if do_bidaf:
+    if do_bidaf_t:
         q_squad = WikiReaderIterable('query', squad_t_path)
         d_squad = WikiReaderIterable('doc', squad_t_path)
         l_squad = WikiReaderIterable('label', squad_t_path)

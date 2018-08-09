@@ -2,19 +2,30 @@
 # -*- coding: utf-8 -*-
 #
 # Author: Aneesh Joshi <aneeshyjoshi@gmail.com>
-# Copyright (C) 2018 RaRe Technologies s.r.o.
-# Licensed under the GNU LGPL v2.1 - http://www.gnu.org/licenses/lgpl.html
 
 """This module makes a trainable and usable model for getting similarity between documents using the MatchPyramid model.
 
-Once the model is trained with the query-candidate-relevance data, the model can provide a vector for each new
-document which is entered into it. The similarity between any 2 documents can then be measured using the
-cosine similarty between the vectors.
+You can read more here: 
+- https://arxiv.org/abs/1606.04648
+- `MatchZoo Repository <https://github.com/faneshion/MatchZoo>`_
+- `Similarity Learning Wikipedia Page <https://en.wikipedia.org/wiki/Similarity_learning>`_
 
-On predicting, the model returns the score list between queries and documents.
+This class has 3 modes:
+1. Ranking
+2. Classification
+3. Inference
 
-`MatchZoo Repository <https://github.com/faneshion/MatchZoo>`_
-`Similarity Learning Wikipedia Page <https://en.wikipedia.org/wiki/Similarity_learning>`_
+Ranking:
+For a query and a group of candidate documents, rank them relative to each other
+Example dataset : WikiQA, InsuranceQA
+
+Classification:
+Basically just paraphrase detection. Is sentenceA and sentenceB the same semantically?
+Example dataset : Quora Duplicate Questions
+
+Inference:
+Given 2 sentences, we try to predict the relation between them.
+"Bob likes Alice", "Bob hates Alice" --> Contradiction
 
 """
 
@@ -125,7 +136,7 @@ def _get_full_batch_iter(pair_list, batch_size, text_maxlen):
                     'dpool_index': DynamicMaxPooling.dynamic_pooling_index(X1_len, X2_len, text_maxlen, text_maxlen)}, np.array(y))
                 X1, X2, X1_len, X2_len, y = [], [], [], [], []
 
-def _get_pair_list(queries, docs, labels, _make_indexed, is_iterable):
+def _get_pair_list(queries, docs, labels, _make_indexed):
     """Yields a tuple with query document pairs in the format
     (query, positive_doc, negative_doc)
     [(q1, d+, d-), (q2, d+, d-), (q3, d+, d-), ..., (qn, d+, d-)]
@@ -142,8 +153,6 @@ def _get_pair_list(queries, docs, labels, _make_indexed, is_iterable):
     _make_indexed : function
         Translates the given sentence as a list of list of str into a list of list of int
         based on the model's internal dictionary
-    is_iterable : bool
-        Whether the input data is streamable
 
     Example
     -------
@@ -162,25 +171,17 @@ def _get_pair_list(queries, docs, labels, _make_indexed, is_iterable):
     ]
 
     """
-    if is_iterable:
-        while True:
-            j=0
-            for q, doc, label in zip(queries, docs, labels):
-                doc, label = (list(t) for t in zip(*sorted(zip(doc, label), reverse=True)))
-                for item in zip(doc, label):
-                    if item[1] == 1:
-                        for new_item in zip(doc, label):
-                            if new_item[1] == 0:
-                                j+=1
-                                yield((_make_indexed(q), len(q)), (_make_indexed(item[0]), len(item[0])), (_make_indexed(new_item[0]), len(new_item[0])))
-    else:
+
+    while True:
+        j=0
         for q, doc, label in zip(queries, docs, labels):
             doc, label = (list(t) for t in zip(*sorted(zip(doc, label), reverse=True)))
             for item in zip(doc, label):
                 if item[1] == 1:
                     for new_item in zip(doc, label):
                         if new_item[1] == 0:
-                            yield(_make_indexed(q), _make_indexed(item[0]), _make_indexed(new_item[0]))
+                            j+=1
+                            yield((_make_indexed(q), len(q)), (_make_indexed(item[0]), len(item[0])), (_make_indexed(new_item[0]), len(new_item[0])))
 
 
 class MatchPyramid(utils.SaveLoad):
@@ -230,6 +231,11 @@ class MatchPyramid(utils.SaveLoad):
                 - 0 : silent
                 - 1 : progress bar
                 - 2 : one line per epoch
+        num_inferences : int
+            The number of possible labels there are.
+            for example: {'contradiction', 'entailment', 'temp'} -> 3
+        steps_per_epoch : int
+            number of steps which will consitute one epoch
 
 
         Examples
@@ -243,7 +249,7 @@ class MatchPyramid(utils.SaveLoad):
         >>> labels = [[0, 1], [1, 0, 0]]
         >>> import gensim.downloader as api
         >>> word_embeddings_kv = api.load('glove-wiki-gigaword-50')
-        >>> model = DRMM_TKS(queries, docs, labels, word_embedding=word_embeddings_kv, verbose=0)
+        >>> model = MatchPyramid(queries, docs, labels, word_embedding=word_embeddings_kv, verbose=0)
         """
         self.queries = queries
         self.docs = docs
@@ -510,7 +516,7 @@ class MatchPyramid(utils.SaveLoad):
     def train(self, queries, docs, labels, word_embedding=None,
               text_maxlen=40, normalize_embeddings=True, epochs=10, unk_handle_method='zero',
               validation_data=None, topk=20, target_mode='ranking', verbose=1, batch_size=100, steps_per_epoch=325):
-        """Trains a DRMM_TKS model using specified parameters
+        """Trains a MatchPyramid model using specified parameters
 
         This method is called from on model initialization if the data is provided.
         It can also be trained in an online manner or after initialization
@@ -541,26 +547,17 @@ class MatchPyramid(utils.SaveLoad):
         if self.needs_vocab_build:
             self.build_vocab(self.queries, self.docs, self.labels, self.word_embedding)
 
-        '''
-        is_iterable = False
-        if isinstance(self.queries, Iterable) and not isinstance(self.queries, list):
-            is_iterable = True
-            logger.info("Input is an iterable amd will be streamed")
-        '''
-        is_iterable = True
 
+        self.pair_list = self._get_pair_list(self.queries, self.docs, self.labels, self._make_indexed)
 
-        self.pair_list = self._get_pair_list(self.queries, self.docs, self.labels, self._make_indexed, is_iterable)
-        if is_iterable:
-            if self.target_mode == 'ranking':
-                train_generator = self._get_full_batch_iter(self.pair_list, batch_size, self.text_maxlen)
-            elif self.target_mode == 'classification':
-                train_generator = self._get_classification_batch(self.batch_size)
-            elif self.target_mode == 'inference':
-                train_generator = self._get_inference_batch(self.batch_size)
+        if self.target_mode == 'ranking':
+            train_generator = self._get_full_batch_iter(self.pair_list, batch_size, self.text_maxlen)
+        elif self.target_mode == 'classification':
+            train_generator = self._get_classification_batch(self.batch_size)
+        elif self.target_mode == 'inference':
+            train_generator = self._get_inference_batch(self.batch_size)
         else:
             raise ValueError()
-            # X1_train, X2_train, y_train = self._get_full_batch()
         
         if self.first_train:
             # The settings below should be set only once
@@ -617,13 +614,11 @@ class MatchPyramid(utils.SaveLoad):
         if self.first_train is True:
             self.first_train = False
 
-        if is_iterable:
-            print('Fitting gen')
-            self.model.fit_generator(train_generator, steps_per_epoch=self.steps_per_epoch, callbacks=val_callback,
-                                    epochs=self.epochs, shuffle=False, verbose=1)
-        else:
-            self.model.fit(x={"query": X1_train, "doc": X2_train}, y=y_train, batch_size=5,
-                           verbose=self.verbose, epochs=self.epochs, shuffle=False, callbacks=val_callback)
+        
+        print('Fitting gen')
+        self.model.fit_generator(train_generator, steps_per_epoch=self.steps_per_epoch, callbacks=val_callback,
+                                epochs=self.epochs, shuffle=False, verbose=1)
+
 
     def _translate_user_data(self, data, silent_mode=True):
         """Translates given user data into an indexed format which the model understands.
@@ -638,7 +633,7 @@ class MatchPyramid(utils.SaveLoad):
         Examples
         --------
         >>> from gensim.test.utils import datapath
-        >>> model = DRMM_TKS.load(datapath('drmm_tks'))
+        >>> model = MatchPyramid.load(datapath('mp_model'))
         >>>
         >>> queries = ["When was World War 1 fought ?".split(), "When was Gandhi born ?".split()]
         >>> print(model._translate_user_data(queries))
@@ -692,7 +687,7 @@ class MatchPyramid(utils.SaveLoad):
         Examples
         --------
         >>> from gensim.test.utils import datapath
-        >>> model = DRMM_TKS.load(datapath('drmm_tks'))
+        >>> model = MatchPyramid.load(datapath('mp_model'))
         >>>
         >>> queries = ["When was World War 1 fought ?".split(), "When was Gandhi born ?".split()]
         >>> docs = [["The world war was bad".split(), "It was fought in 1996".split()], ["Gandhi was born in the 18th"
@@ -730,6 +725,16 @@ class MatchPyramid(utils.SaveLoad):
         return predictions
   
     def evaluate_classification(self, X1, X2, D, batch_size=20):
+        """Evaluate a classification model and return the accuracy
+        
+        Parameters
+        ----------
+        X1 : list of list of str
+        X2 : list of list of str
+        D : list of int {1,0}
+            whether xi, xj are duplicates
+
+        """
         batch_size=20
         num_correct = 0
         num_total = 0
@@ -762,7 +767,16 @@ class MatchPyramid(utils.SaveLoad):
         return num_correct, num_total, num_correct/num_total
 
     def evaluate_inference(self, X1, X2, D, batch_size=20):
-        batch_size=20
+        """Evaluate an inference model and return the accuracy
+        
+        Parameters
+        ----------
+        X1 : list of list of str
+        X2 : list of list of str
+        D : list of int
+            the inference label of xi, xj
+
+        """
         num_correct = 0
         num_total = 0
         x1_batch, x2_batch, dupl_batch = [], [], []
@@ -843,12 +857,11 @@ class MatchPyramid(utils.SaveLoad):
 
     def save(self, fname, *args, **kwargs):
         """Save the model.
-        This saved model can be loaded again using :func:`~gensim.models.experimental.drmm_tks.DRMM_TKS.load`
+        This saved model can be loaded again using :func:`~sl_eval.moedls.matchpyramid.MatchPyramid.load`
         The keras model shouldn't be serialized using pickle or cPickle. So, the non-keras
         variables will be saved using gensim's SaveLoad and the keras model will be saved using
         the keras save method with ".keras" prefix.
 
-        Also see :func:`~gensim.models.experimental.drmm_tks.DRMM_TKS.load`
 
         Parameters
         ----------
@@ -858,8 +871,8 @@ class MatchPyramid(utils.SaveLoad):
         Examples
         --------
         >>> from gensim.test.utils import datapath, get_tmpfile
-        >>> model = DRMM_TKS.load(datapath('drmm_tks'))
-        >>> model_save_path = get_tmpfile('drmm_tks_model')
+        >>> model = MatchPyramid.load(datapath('mp_model'))
+        >>> model_save_path = get_tmpfile('mp_model')
         >>> model.save(model_save_path)
         """
         # don't save the keras model as it needs to be saved with a keras function
@@ -883,15 +896,15 @@ class MatchPyramid(utils.SaveLoad):
 
         Returns
         -------
-        :obj: `~gensim.models.experimental.DRMM_TKS`
-            Returns the loaded model as an instance of :class: `~gensim.models.experimental.DRMM_TKS`.
+        :obj: `~sl_eval.models.matchpyramid.MatchPyramid`
+            Returns the loaded model as an instance of :class: `~sl_eval.models.matchpyramid.MatchPyramid`.
 
 
         Examples
         --------
         >>> from gensim.test.utils import datapath, get_tmpfile
-        >>> model_file_path = datapath('drmm_tks')
-        >>> model = DRMM_TKS.load(model_file_path)
+        >>> model_file_path = datapath('mp_model')
+        >>> model = MatchPyramid.load(model_file_path)
         """
         fname = args[0]
         gensim_model = super(MatchPyramid, cls).load(*args, **kwargs)

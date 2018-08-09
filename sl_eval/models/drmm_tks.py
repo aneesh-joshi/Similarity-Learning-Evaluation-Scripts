@@ -25,6 +25,25 @@ It has the following steps:
 5. input `mm_k` into hidden layers, with specified length of layers and activation function.
 6. compute `g` and `mm_k` with element-wise multiplication.
 
+
+This class has 3 modes:
+1. Ranking
+2. Classification
+3. Inference
+
+Ranking:
+For a query and a group of candidate documents, rank them relative to each other
+Example dataset : WikiQA, InsuranceQA
+
+Classification:
+Basically just paraphrase detection. Is sentenceA and sentenceB the same semantically?
+Example dataset : Quora Duplicate Questions
+
+Inference:
+Given 2 sentences, we try to predict the relation between them.
+"Bob likes Alice", "Bob hates Alice" --> Contradiction
+
+
 On predicting, the model returns the score list between queries and documents.
 
 The trained model needs to be trained on data in the format:
@@ -903,6 +922,16 @@ class DRMM_TKS(utils.SaveLoad):
         return model
 
     def evaluate_classification(self, X1, X2, D, batch_size=20):
+        """Evaluate a classification model and return the accuracy
+        
+        Parameters
+        ----------
+        X1 : list of list of str
+        X2 : list of list of str
+        D : list of int {1,0}
+            whether xi, xj are duplicates
+
+        """
         num_correct = 0
         num_total = 0
         x1_batch, x2_batch, dupl_batch = [], [], []
@@ -931,6 +960,16 @@ class DRMM_TKS(utils.SaveLoad):
         return num_correct, num_total, num_correct/num_total 
 
     def evaluate_inference(self, X1, X2, D, batch_size=20):
+        """Evaluate an inference model and return the accuracy
+        
+        Parameters
+        ----------
+        X1 : list of list of str
+        X2 : list of list of str
+        D : list of int
+            the inference label of xi, xj
+
+        """
         num_correct = 0
         num_total = 0
         x1_batch, x2_batch, dupl_batch = [], [], []

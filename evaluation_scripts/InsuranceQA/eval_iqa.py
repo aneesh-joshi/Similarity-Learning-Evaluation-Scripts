@@ -87,6 +87,41 @@ def save_model_pred(test_data, fname, similarity_fn):
     print("Prediction done. Saved as %s" % fname)
 
 
+def w2v_similarity_fn(q, d):
+    """Similarity Function for Word2Vec
+
+    Parameters
+    ----------
+    query : list of str
+    doc : list of str
+
+    Returns
+    -------
+    similarity_score : float
+    """
+    def sent2vec(sent):
+        if len(sent)==0:
+            print('length is 0, Returning random')
+            return np.random.random((kv_model.vector_size,))
+
+        vec = []
+        for word in sent:
+            if word in kv_model:
+                vec.append(kv_model[word])
+
+        if len(vec) == 0:
+            print('No words in vocab, Returning random')
+            return np.random.random((kv_model.vector_size,))
+
+        vec = np.array(vec)
+
+        return np.mean(vec, axis=0)
+
+    def cosine_similarity(vec1, vec2):
+        return np.dot(vec1, vec2)/(np.linalg.norm(vec1)* np.linalg.norm(vec2))
+    return cosine_similarity(sent2vec(q),sent2vec(d))
+
+
 def mp_similarity_fn(q, d):
     """Similarity Function for DRMM TKS
 
@@ -141,6 +176,13 @@ if __name__ == '__main__':
     test2_data = iqa_reader.get_test_data('test2', batch_size=test_batch_size)
 
     kv_model = api.load('glove-wiki-gigaword-' + str(word_embedding_len))
+    
+    print('Getting word2vec baselines')
+    save_model_pred(test1_data, 'iqa_baseline_test1_w2v', w2v_similarity_fn)
+    save_model_pred(test2_data, 'iqa_baseline_test2_w2v', w2v_similarity_fn)
+
+    exit()
+
     steps_per_epoch = len(train_q)//batch_size
 
     mp_model = MatchPyramid(queries=train_q, docs=train_d, labels=train_l, target_mode='ranking',
@@ -152,6 +194,7 @@ if __name__ == '__main__':
 
     save_qrels(test2_data, qrels2_save_name_mp)
     save_model_pred(test2_data, pred2_save_name_mp, mp_similarity_fn)
+
 
 
     # DRMM_TKS PARAMETERS ---------------------------------------------------------
