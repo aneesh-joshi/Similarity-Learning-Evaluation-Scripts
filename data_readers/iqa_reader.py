@@ -6,7 +6,33 @@ from sklearn.utils import shuffle
 
 class IQAReader:
     """Class to read the InsuranceQA dataset and provide train, test and dev samples according
-    to specification""" 
+    to specification
+    
+    About InsuranceQA
+    -----------------
+    This dataset was originally released here : TODO
+    It has several different formats but at its base there is (for one data point):
+    - a question
+    - one or more correct answers
+    - a pool of all answers (correct and incorrect)
+
+    It doesn't have a simple format like question - document - relevance
+    So, we'll have to convert it to the QA format.
+    That basically involves taking a question, its correct answer and marking it as relevant.
+    Then for the remaining number of answers(however big you want the batch size to be), we pick
+    (batch_size - current_size) a=
+
+    The original repo has several files and is *very* confusing.
+    Luckily, there is a converted version of it here : TODO
+
+    This class directly making use of that version and provides it in the QA format
+
+    Parameters
+    ----------
+    folder_path : str
+    path to the folder cloned from TODO
+
+    """ 
 
     def __init__(self, folder_path):
         self.folder_path = folder_path
@@ -16,15 +42,59 @@ class IQAReader:
 
 
     def _get_pickle(self, filename):
+        """Unpickles and loads a file"""
         return pickle.load(open(os.path.join(self.folder_path, filename), 'rb'))
 
     def _translate_sent(self, sent):
+        """Translates a sentence from the index format to the string format
+
+        Note: InsuranceQA for some reason provides words as indices along with a conversion dict
+        So, the dataset looks like : [12, 345, 23, ...]
+        with {12 : 'hello', 345: 'world', ...}
+
+        This function translates a given indexed sentence
+
+        Parameters
+        ----------
+        sent : list of int
+            The sentence to be translated
+
+        Returns
+        -------
+        list of str
+        """
         return [self.vocab[word] for word in sent]
 
     def _get_answer(self, answer_id):
+        """Gets the sentence from a pool of answers using the answer_id and translates it using the
+        translation dict
+
+        Parameters
+        ----------
+        answer_id : int
+            The id of the answer which needs translation.
+
+        Returns
+        -------
+        list of str
+        """
         return self._translate_sent(self.answer_pool[answer_id])
 
     def _get_pool_answer(self, correct_answer_ids):
+        """Gets one random answer from the pool of answers which isn't correct_answer_ids(can be more than one)
+
+        Note: Since there is a pool of answers, we will pick a negative answer at random. However, it cannot be
+        the same aas the correct answer. If you get the correct answer by chance, re-sample from the pool
+
+        Parameters
+        ----------
+        correct_answer_ids : list of int
+            The ids of the correct answers
+
+        Returns
+        -------
+        list of str
+        """
         answer_id = random.randint(1, self.num_answers)
         while (set([answer_id]) <= set(correct_answer_ids)) == True:
             answer_id = random.randint(1, self.num_answers)
@@ -32,7 +102,23 @@ class IQAReader:
 
 
     def get_train_data(self, batch_size):
-        """Gets the training data"""
+        """Gets the training data in batches of `batch_size`
+
+        Initially, we take a question, its correct answer and label it as relevant.
+        Then, we check if the size if filling the batch (it shouldn't)
+
+        For the reamining empty slots in the batch, we sample an answer from the pool
+        of answers which isn't the correct answer and label it as irrelevant.
+        Lastly, we shuffle the batches and return it.
+        
+        Beware: Due to the stochastic sampling nature of this dataset, we can get
+        different datasets from run to run.
+
+        Parameters
+        ----------
+        batch_size : int
+            The size of the batches of training data
+        """
         train = self._get_pickle('train')
         batch_a, batch_l = [], []
         questions, answers, labels = [], [], []
@@ -60,9 +146,19 @@ class IQAReader:
         return questions, answers, labels
 
     def get_test_data(self, split, batch_size):
-        """Gets the training data
+        """Gets the testing data in a format which allows evalution in the
+        TREC format needed by the calling script. You can still use it for
+        general purposes.
 
+        Beware: Due to the stochastic sampling nature of this dataset, we can get
+        different datasets from run to run.
+
+        Parameters
+        ----------
         split : {'test1', 'test2'}
+            InsuraceQA provides these two test sets.
+        batch_size : int
+            The size of the batches of training data
         """
         testx = self._get_pickle(split)
         batch_a, batch_l = [], []
@@ -88,41 +184,3 @@ class IQAReader:
             batch_a, batch_l, batch_doc_ids = [], [], []
 
         return [questions, answers, labels, question_ids, doc_ids]
-
-if __name__ == '__main__':
-    iqa_reader = InsuranceQAReader(pool_size=32)
-    print(iqa_reader.get_train_data()[2])
-
-
-    # questions, docs, labels = {}, {}, {}
-
-
-    # for name in ['dev', 'test1', 'test2']:
-
-    #   dev = _get_pickle(name)
-    #   print('There are %d questions in %s' % (len(dev), name))
-
-    #   dev_questions = []
-    #   dev_answers = []
-    #   dev_labels = []
-
-    #   for data_item in dev:
-    #       dev_questions.append(self._translate_sent(data_item['question']))
-    #       dev_batch_answer, dev_batch_label = [], []
-    #       dev_batch_answer.append(self._get_answer(data_item['good'][0]))
-    #       dev_batch_label.append(1)
-
-    #       for bad_answer in data_item['bad']:
-    #           dev_batch_answer.append(self._get_answer(bad_answer))
-    #           dev_batch_label.append(0)
-    #       dev_answers.append(dev_batch_answer)
-    #       dev_labels.append(dev_batch_label)
-    #       dev_batch_answer, dev_batch_label = [], []
-
-    #   questions[name] = dev_questions
-    #   docs[name] = dev_answers
-    #   labels[name] = dev_labels
-
-    #   # for q, doc, label in zip(dev_questions, dev_answers, dev_labels):
-    #   #   print(len(q), len(doc), len(label))
-    #   #   print('=================================================\n\n\n\n\n\n\n')

@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-#
 # Author: Aneesh Joshi <aneeshyjoshi@gmail.com>
 
 """This module makes a trainable and usable model for getting similarity between documents using the DRMM_TKS model.
@@ -167,7 +166,7 @@ def _get_full_batch_iter(pair_list, batch_size):
                 X1, X2, y = [], [], []
 
 
-def _get_pair_list(queries, docs, labels, _make_indexed, is_iterable):
+def _get_pair_list(queries, docs, labels, _make_indexed):
     """Yields a tuple with query document pairs in the format
     (query, positive_doc, negative_doc)
     [(q1, d+, d-), (q2, d+, d-), (q3, d+, d-), ..., (qn, d+, d-)]
@@ -184,8 +183,6 @@ def _get_pair_list(queries, docs, labels, _make_indexed, is_iterable):
     _make_indexed : function
         Translates the given sentence as a list of list of str into a list of list of int
         based on the model's internal dictionary
-    is_iterable : bool
-        Whether the input data is streamable
 
     Example
     -------
@@ -204,24 +201,15 @@ def _get_pair_list(queries, docs, labels, _make_indexed, is_iterable):
     ]
 
     """
-    if is_iterable:
-        while True:
-            j=0
-            for q, doc, label in zip(queries, docs, labels):
-                doc, label = (list(t) for t in zip(*sorted(zip(doc, label), reverse=True)))
-                for item in zip(doc, label):
-                    if item[1] == 1:
-                        for new_item in zip(doc, label):
-                            if new_item[1] == 0:
-                                j+=1
-                                yield(_make_indexed(q), _make_indexed(item[0]), _make_indexed(new_item[0]))
-    else:
+    while True:
+        j=0
         for q, doc, label in zip(queries, docs, labels):
             doc, label = (list(t) for t in zip(*sorted(zip(doc, label), reverse=True)))
             for item in zip(doc, label):
                 if item[1] == 1:
                     for new_item in zip(doc, label):
                         if new_item[1] == 0:
+                            j+=1
                             yield(_make_indexed(q), _make_indexed(item[0]), _make_indexed(new_item[0]))
 
 
@@ -577,14 +565,8 @@ class DRMM_TKS(utils.SaveLoad):
         if self.needs_vocab_build:
             self.build_vocab(self.queries, self.docs, self.labels, self.word_embedding)
 
-        # is_iterable = False
-        # if isinstance(self.queries, Iterable) and not isinstance(self.queries, list):
-        #     is_iterable = True
-        #     logger.info("Input is an iterable amd will be streamed")
-        is_iterable = True  # it should always be an iterable. Setting to True for now.
-
         if self.target_mode == 'ranking':
-            self.pair_list = self._get_pair_list(self.queries, self.docs, self.labels, self._make_indexed, is_iterable)    
+            self.pair_list = self._get_pair_list(self.queries, self.docs, self.labels, self._make_indexed)    
             train_generator = self._get_full_batch_iter(self.pair_list, self.batch_size)
         elif self.target_mode == 'classification':
             train_generator = self._get_classification_batch(self.batch_size)
@@ -597,15 +579,11 @@ class DRMM_TKS(utils.SaveLoad):
         if self.first_train:
             # The settings below should be set only once
             self.model = self._get_keras_model()
-            optimizer = 'adam'
             optimizer = 'adadelta'
             optimizer = optimizers.get(optimizer)
             learning_rate = 0.0001
             learning_rate = 1
             K.set_value(optimizer.lr, learning_rate)
-            # either one can be selected. Currently, the choice is manual.
-            loss = hinge
-            loss = 'mse'
             loss = rank_hinge_loss
             if self.target_mode == 'classification':
                 loss = 'categorical_crossentropy'
@@ -651,12 +629,10 @@ class DRMM_TKS(utils.SaveLoad):
         if self.first_train is True:
             self.first_train = False
 
-        if is_iterable:
-            self.model.fit_generator(train_generator, steps_per_epoch=self.steps_per_epoch, callbacks=val_callback,
-                                    epochs=self.epochs, shuffle=False)
-        else:
-            self.model.fit(x={"query": X1_train, "doc": X2_train}, y=y_train, batch_size=5,
-                           verbose=self.verbose, epochs=self.epochs, shuffle=False, callbacks=val_callback)
+
+        self.model.fit_generator(train_generator, steps_per_epoch=self.steps_per_epoch, callbacks=val_callback,
+                                 epochs=self.epochs, shuffle=False)
+
 
     def _translate_user_data(self, data, silent_mode=True):
         """Translates given user data into an indexed format which the model understands.

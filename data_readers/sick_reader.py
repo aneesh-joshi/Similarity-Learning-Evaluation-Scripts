@@ -2,7 +2,31 @@ import re
 import os
 
 class SickReader:
-    """Reader object to provide training data"""
+    """Reader object to provide training data from the SICK dataset
+    More details can be found here : TODO
+
+    The dataset contains:
+    - two sentences, SentenceA and SentenceB
+    - thier relation to each other (entailment, contradiction, neutral)
+    - their relatedness score (sentA and sentB have a relatedness score of 3.4)
+    
+    Example row in the dataset:
+    pair_ID sentence_A  sentence_B  entailment_label    relatedness_score   entailment_AB   entailment_BA   sentence_A_original sentence_B_original sentence_A_dataset  sentence_B_dataset  SemEval_set
+    1   A group of kids is playing in a yard and an old man is standing in the background   A group of boys in a yard is playing and a man is standing in the background    NEUTRAL 4.5 A_neutral_B B_neutral_A A group of children playing in a yard, a man in the background. A group of children playing in a yard, a man in the background. FLICKR  FLICKR  TRAIN
+
+    You can get the entailment data with labels with `get_entailment_data`
+    You can get the relatedness data with labels with `get_relatedness_data`
+
+
+    Parameters
+    ----------
+    filepath : str
+        path to folder with SICK.txt
+    preprocess_fn : function
+        function to preprocess sentences.
+        If None, will use `self._preprocess_fn`
+
+    """
     def __init__(self, filepath, preprocess_fn=None):
         if preprocess_fn != None:
             self.preprocess_fn = preprocess_fn
@@ -31,20 +55,30 @@ class SickReader:
 
     def _preprocess_fn(self, sent):
         """Utility function to lower, strip and tokenize each sentence(on spaces)
-
-        Replace this function if you want to handle preprocessing differently"""
+        Replace this function if you want to handle preprocessing differently
+        
+        Parameters
+        ----------
+        sent : str
+            The string sentence
+        """
         return re.sub("[^a-zA-Z0-9]", " ", sent.strip().lower()).split()
 
     def get_entailment_data(self):
-        """Returns data in the format: SentA, SentB, Entailment Label"""
+        """Returns data in the format: SentA, SentB, Entailment Label
+
+        where each of them is a dict which contains the train, test and trial data in 
+        'TRAIN', 'TEST' and 'TRIAL' keys respectively"""
         return self.sentenceA, self.sentenceB, self.entailment_label
 
     def get_relatedness_data(self):
-        """Returns data in the format: SentA, SentB, RelatednessScore"""
+        """Returns data in the format: SentA, SentB, RelatednessScore
+        where each of them is a dict which contains the train, test and trial data in 
+        'TRAIN', 'TEST' and 'TRIAL' keys respectively"""
         return self.sentenceA, self.sentenceB, self.relatedness_score
 
     def get_entailment_label_dict(self):
+        """Returns the mapping from int to label(str)
+        {'CONTRADICTION': 0, 'ENTAILMENT': 1, 'NEUTRAL': 2}"""
         return self.entailment_label2index
 
-if __name__ == '__main__':
-    print(SickReader().get_relatedness_data()[1])
