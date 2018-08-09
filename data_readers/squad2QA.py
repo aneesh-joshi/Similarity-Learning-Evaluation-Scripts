@@ -22,7 +22,7 @@ if __name__ == '__main__':
     squad_file = args.squad_path
 
     qa_file_name = 'SQUAD-T-QA+.tsv'
-    with open(qa_file_name, 'w') as f:
+    with open(qa_file_name, 'w', encoding='utf-8') as f:
         j = json.load(open(squad_file, encoding='utf-8'))
 
         header = 'QuestionID    Question    DocumentID  DocumentTitle   SentenceID  Sentence    Label'
@@ -59,8 +59,7 @@ if __name__ == '__main__':
                         inner_doc_id += 1
                         icntr += 1
                         if i == relevant_ans_index:
-                            f.write('Q'+str(question_id) + '\t' + q + '\t' +\
-                              'D'+str(question_id) + '\t' + 'TempDocTitle' + '\t' + 'D'+str(question_id)+'-'+str(inner_doc_id)+'\t'+s+'\t'+ str(1)+ '\n')
+                           f.write('Q'+str(question_id) + '\t' + q + '\t' + 'D'+str(question_id) + '\t' + 'TempDocTitle' + '\t' + 'D'+str(question_id)+'-'+str(inner_doc_id)+'\t'+s+'\t'+ str(1)+ '\n')
                         else:
                             f.write('Q'+str(question_id) + '\t' + q + '\t' +\
                               'D'+str(question_id) + '\t' + 'TempDocTitle' + '\t' + 'D'+str(question_id)+'-'+str(inner_doc_id)+'\t'+s+'\t'+ str(0)+ '\n')
