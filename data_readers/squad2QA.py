@@ -95,10 +95,10 @@ if __name__ == '__main__':
                         inner_doc_id += 1
                         icntr += 1
                         if i == relevant_ans_index:
-                            f.write('Q'+str(question_id) + '\t' + q + '\t' +\
-                              'D'+str(question_id) + '\t' + 'TempDocTitle' + '\t' + 'D'+str(question_id)+'-'+str(inner_doc_id)+'\t'+s+'\t'+ str(1)+ '\n')
+                            f.write('Q'+str(question_id) + '\t' + q.strip().replace("\n", "") + '\t' +\
+                              'D'+str(question_id) + '\t' + 'TempDocTitle' + '\t' + 'D'+str(question_id)+'-'+str(inner_doc_id)+'\t'+s.strip().replace("\n", "")+'\t'+ str(1)+ '\n')
                         else:
-                            f.write('Q'+str(question_id) + '\t' + q + '\t' +\
-                              'D'+str(question_id) + '\t' + 'TempDocTitle' + '\t' + 'D'+str(question_id)+'-'+str(inner_doc_id)+'\t'+s+'\t'+ str(0)+ '\n')
+                            f.write('Q'+str(question_id) + '\t' + q.strip().replace("\n", "") + '\t' +\
+                              'D'+str(question_id) + '\t' + 'TempDocTitle' + '\t' + 'D'+str(question_id)+'-'+str(inner_doc_id)+'\t'+s.strip().replace("\n", "")+'\t'+ str(0)+ '\n')
 
     print('write complete. File saved as %s' % qa_file_name)
