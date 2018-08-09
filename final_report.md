@@ -327,13 +327,6 @@ This is how I implement it:
 	    >>> print(mapk(Y_true, Y_pred))
 	    0.75
 	    """
-	    # s = 0
-	    # n = 0
-	    # for i, j in zip(Y_true, Y_pred):
-	    #     i, j = np.reshape(np.array(i), (-1,1)), np.reshape(np.array(j), (-1,1))
-	    #     s += average_precision_score(i, j)
-	    #     n += 1
-	    # return s/n
 
 	    aps = []
 	    n_skipped = 0
@@ -433,7 +426,10 @@ For example, y_true = [[1, 0, 0], [0, 0, 1]], y_pred = [[0.8, 0.1, 0.1], [0.7, 0
 
 Again, effectively, the more wrong value (0.7) contributes more to the loss, whereas the correct value(0.9) reduces it greatly
 
-(K: is the Keras backend, effectively K=tf, K.maximum : is elementwise maximum, K.max gets the maximum value in a tensor)
+	K: is the Keras backend
+	effectively K=tf
+	K.maximum : is elementwise maximum
+	K.max gets the maximum value in a tensor
 
 
 The third "non-standard" idea is that of 
@@ -511,9 +507,7 @@ After going through the initial evaluation, we decided to implement the DRMM TKS
 9. Once the model training is done, evaluate it on the test set. You can obviously use your own implementation, but as a standard, it would be better to write your results into the TREC format as I have done [here](TODO) and then use the `trec_eval` binary described before for evaluating. This standardizes evaluation and makes it easier for others to trust the result.
 10. Saving models can get a bit tricky, especially if you're using keras. Keras prefers it's own way of saving against the satandard gensim `util.SaveLoad` You will have to save the keras model separate from the non-keras model and combine them while loading. Moreover, if you have any Lambda Layer, you will have to replace them with custom layers like I did [here](TODO) for the TopK Layer.
 
-Most of the above has been done in [my script] and you can mostly just use that skeleton while changing just the `_get_keras_model` function.
-
-## 6. The journey
+Most of the above has been done in [my script](TODO) and you can mostly just use that skeleton while changing just the `_get_keras_model` function.
 
 Once my DRMM_TKS model was set up, it was performing very poorly (0.54 on MAP). After trying every idea I could imagine for fine tuning it, I ended up with a model which performed 0.63 on MAP. Beyond this point, however, I didn't feel like any changes I made would make it perform any better. You are welcome to try.  
 Seeing that DRMM_TKS wasn't doing so well, I moved my attention to the next best performing model in my list of model, [MatchPyramid](https://arxiv.org/abs/1606.04648). This model, after some tuning, managed to score 0.64-0.65 MAP.
