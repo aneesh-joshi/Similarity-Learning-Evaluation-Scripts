@@ -159,6 +159,7 @@ if __name__ == '__main__':
     
 
 
+
     parser = argparse.ArgumentParser()
     parser.add_argument('--model_type', required=False, help='the model to be evaluated (mp, dtks, bidaf_t)')
     args = parser.parse_args()
@@ -215,6 +216,7 @@ if __name__ == '__main__':
 
         n_epochs = 1
 
+
         batch_size = 100
         text_maxlen = 100
         steps_per_epoch_squad = num_squad_samples // batch_size
@@ -243,6 +245,7 @@ if __name__ == '__main__':
         steps_per_epoch = num_samples_wikiqa // finetune_batch_size
         bidaf_t_model.train(queries=q_iterable, docs=d_iterable, labels=l_iterable, batch_size=finetune_batch_size,
                             steps_per_epoch=steps_per_epoch, n_epochs=finetune_epochs)
+
 
 
         print('Testing on WikiQA-test after finetuning')

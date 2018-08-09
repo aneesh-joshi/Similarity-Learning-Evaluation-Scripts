@@ -32,6 +32,7 @@ if __name__ == '__main__':
 	steps_per_epoch = 1
 	else:
 	steps_per_epoch = len(train_x1)//batch_size
+	
 	batch_size = 50
 	text_maxlen = 200
 	n_epochs = 5 
@@ -42,6 +43,7 @@ if __name__ == '__main__':
 	print('Results on MatchPyramid with SICK dataset')
 
 	print('Accuracy = %.2f' % accuracy)
+
 	print('Predicted %d correct out of a total of %d' % (num_correct, num_total))
 
 	batch_size = 50

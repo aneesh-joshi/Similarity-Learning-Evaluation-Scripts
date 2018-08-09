@@ -26,6 +26,7 @@ if __name__ == '__main__':
 	n_epochs = 1#5 
 	steps_per_epoch = len(train_x1)//batch_size
 	steps_per_epoch = 1
+	
 	batch_size = 50
 	text_maxlen = 200
 	n_epochs = 5 
