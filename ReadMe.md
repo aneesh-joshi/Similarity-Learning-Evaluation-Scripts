@@ -31,4 +31,4 @@ can be found in the folder `sl_eval/models/`
 The folder `evaluation_scripts/` contains files and folders for running these models on different datasets.
 
 
-
+**Note:** Make sure you take a look at the Issues for contribution ideas and for getting an idea of current ideas.

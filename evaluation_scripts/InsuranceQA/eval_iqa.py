@@ -179,20 +179,11 @@ if __name__ == '__main__':
     kv_model = api.load('glove-wiki-gigaword-' + str(word_embedding_len))
     
     print('Getting word2vec baselines')
-<<<<<<< HEAD
     save_model_pred(test1_data, 'pred_iqa_baseline_test1_w2v', w2v_similarity_fn)
     save_model_pred(test2_data, 'pred_iqa_baseline_test2_w2v', w2v_similarity_fn)
     save_qrels(test1_data, 'qrels_iqa_baseline_test1_w2v')
     save_qrels(test2_data, 'qrels_iqa_baseline_test2_w2v')
 
-    exit()
-=======
-    save_model_pred(test1_data, 'iqa_baseline_test1_w2v', w2v_similarity_fn)
-    save_model_pred(test2_data, 'iqa_baseline_test2_w2v', w2v_similarity_fn)
-
-    exit()
-
->>>>>>> 035028de1043ec47739fc67c924d24b3c8b0d8c6
     steps_per_epoch = len(train_q)//batch_size
 
     mp_model = MatchPyramid(queries=train_q, docs=train_d, labels=train_l, target_mode='ranking',

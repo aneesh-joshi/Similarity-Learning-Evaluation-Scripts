@@ -2,14 +2,33 @@
 Utility script to download the datsets for Similarity Learning
 Currently supports:
 - WikiQA
-- Quora Duplicate Question Pairs
+- SNLI
+- SICK
+- SQUAD
+- insurance_qa
+
+Additional datasets like
+- Quora Duplicate Questions
+- Glove
+will be downloaded when needed by gensim-data
 
 Example Usage:
+--------------
+
+To get all needed datasets:
+$ python get_data.py
+
 To get wikiqa
 $ python get_data.py --datafile wikiqa
 
-To get quoraqp
-$ python get_data.py --datafile quoraqp
+Options are:
+- wikiqa
+- snli
+- sick
+- squad1
+- insurance_qa
+
+
 """
 import requests
 import argparse
@@ -21,7 +40,6 @@ logger = logging.getLogger(__name__)
 
 # The urls and filepaths of currently supported files
 wikiqa_url, wikiqa_file = "https://download.microsoft.com/download/E/5/F/E5FCFCEE-7005-4814-853D-DAA7C66507E0/", "WikiQACorpus.zip"  # noqa
-quoraqp_url, quoraqp_file = "http://qim.ec.quoracdn.net/", "quora_duplicate_questions.tsv"
 snli_url, snli_file = "https://nlp.stanford.edu/projects/snli/", "snli_1.0.zip"
 SICK_url, SICK_file = "http://clic.cimec.unitn.it/composes/materials/", "SICK.zip"
 SQUAD2_train_url, SQUAD2_train_file = "https://rajpurkar.github.io/SQuAD-explorer/dataset/", "train-v2.0.json"
@@ -69,22 +87,25 @@ if __name__ == '__main__':
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
     )
     parser.add_argument('--datafile', default='all',
-                        help='file you want to download. Options: wikiqa, quoraqp, glove, all')
+                        help='file you want to download. Options: - wikiqa, snli, sick, squad1, insurance_qa')
     parser.add_argument('--output_dir', default='./',
                         help='the directory where you want to save the data')
 
     args = parser.parse_args()
     if args.datafile == 'wikiqa':
         download(wikiqa_url, wikiqa_file, args.output_dir, unzip=True)
-    elif args.datafile == 'quoraqp':
-        download(quoraqp_url, quoraqp_file, args.output_dir)
-    elif args.datafile == 'glove':
-        download(glove_url, glove_file, args.output_dir, unzip=True)
-    elif args.datafile == 'all':
+    elif args.datafile == 'snli':
+        download(snli_url, snli_file, args.output_dir, unzip=True)
+    elif args.datafile == 'sick':
+        download(sick_url, sick_file, args.output_dir, unzip=True)
+    elif args.datafile == 'squad1':
+        download(SQUAD1_train_url, SQUAD1_train_file, args.output_dir)
+    elif args.datafile == 'insurance_qa':
+        os.system('git clone ' + InsuranceQA_git_link)
+    else args.datafile == 'all':
         logger.info("Downloading all files.")
         download(wikiqa_url, wikiqa_file, args.output_dir, unzip=True)
         download(snli_url, snli_file, args.output_dir, unzip=True)
-        download(SICK_url, SICK_file, args.output_dir, unzip=True)
+        download(sick_url, sick_file, args.output_dir, unzip=True)
+        download(SQUAD1_train_url, SQUAD1_train_file, args.output_dir)
         os.system('git clone ' + InsuranceQA_git_link)
-    else:
-        logger.info("Unknown dataset %s" % args.datafile)
