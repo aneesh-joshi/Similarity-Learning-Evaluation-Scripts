@@ -5,7 +5,7 @@ This repo contains:
 - code for baselines on these datasets
 - a report with a detailed study of similarity learning
 
-Please refer to [Report.md](final_report.md) for the detailed study which explains what Similarity Learning is, the tasks that it involves and different models used for.
+Please refer to [Report.md](Report.md) for the detailed study which explains what Similarity Learning is, the tasks that it involves and different models used for.
 
 ## Getting Started
 ### Downloading Datasets
@@ -19,7 +19,7 @@ This will download:
 - SNLI
 - SICK
 
-Additionally, we need the Quora Duplicate Questions Dataset and Glove Embedding vectors. Luckily, they are available in [gensim-data](TODO) and will be automagically downloaded when needed.
+Additionally, we need the Quora Duplicate Questions Dataset and Glove Embedding vectors. Luckily, they are available in [gensim-data](https://github.com/RaRe-Technologies/gensim-data) and will be automagically downloaded when needed.
 
 ### Running Evaluations
 The models:  

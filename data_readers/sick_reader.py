@@ -3,7 +3,7 @@ import os
 
 class SickReader:
     """Reader object to provide training data from the SICK dataset
-    More details can be found here : TODO
+    More details can be found here : http://clic.cimec.unitn.it/composes/sick.html
 
     The dataset contains:
     - two sentences, SentenceA and SentenceB

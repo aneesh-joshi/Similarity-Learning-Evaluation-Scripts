@@ -5,7 +5,7 @@ from keras.utils.np_utils import to_categorical
 
 class SnliReader:
 	"""Reader for the SNLI dataset
-	More details can be found here : TODO
+	More details can be found here : https://nlp.stanford.edu/projects/snli/
 
 	Each data point contains 2 sentences and their label('contradiction', 'entailment', 'neutral')
 	Additionally, it also provides annotator labels which has a range of labels given by the annotators. We will mostly ignore this.

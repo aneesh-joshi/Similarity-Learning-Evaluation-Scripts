@@ -10,7 +10,7 @@ class IQAReader:
     
     About InsuranceQA
     -----------------
-    This dataset was originally released here : TODO
+    This dataset was originally released here : https://github.com/shuzi/insuranceQA
     It has several different formats but at its base there is (for one data point):
     - a question
     - one or more correct answers
@@ -20,17 +20,17 @@ class IQAReader:
     So, we'll have to convert it to the QA format.
     That basically involves taking a question, its correct answer and marking it as relevant.
     Then for the remaining number of answers(however big you want the batch size to be), we pick
-    (batch_size - current_size) a=
+    (batch_size - current_size) from the pool of answers
 
     The original repo has several files and is *very* confusing.
-    Luckily, there is a converted version of it here : TODO
+    Luckily, there is a converted version of it here : https://github.com/codekansas/insurance_qa_python
 
     This class directly making use of that version and provides it in the QA format
 
     Parameters
     ----------
     folder_path : str
-    path to the folder cloned from TODO
+    path to the folder cloned from https://github.com/codekansas/insurance_qa_python 
 
     """ 
 
