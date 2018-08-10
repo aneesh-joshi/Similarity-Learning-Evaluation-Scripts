@@ -50,6 +50,7 @@ import json
 from nltk.tokenize import sent_tokenize
 from gensim.utils import simple_preprocess
 import argparse
+import os
 
 if __name__ == '__main__':
 
@@ -60,7 +61,7 @@ if __name__ == '__main__':
 
     squad_file = args.squad_path
 
-    qa_file_name = 'SQUAD-T-QA+.tsv'
+    qa_file_name = os.path.join('..', 'data', 'SQUAD-T-QA.tsv')
     with open(qa_file_name, 'w', encoding='utf-8') as f:
         j = json.load(open(squad_file, encoding='utf-8'))
 

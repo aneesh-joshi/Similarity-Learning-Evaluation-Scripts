@@ -6,7 +6,7 @@ The TREC format includes a "qrels" and a "pred" file
 It can then be evaluated using
 ./trec_eval qrels pred
 
-(Get trec_eval from misc_scripts/)
+(Get trec_eval from misc_scripts/get_trec.py)
 
 The script will automatically save the qrels and pred file with a distinguishable name.
 For example,
@@ -155,9 +155,11 @@ def mp_similarity_fn(q, d):
 if __name__ == '__main__':
     wikiqa_folder = os.path.join('..', '..', 'data', 'WikiQACorpus')
 
-    squad_t_path = os.path.join('..', '..', 'data', 'SQUAD-T-QA+.tsv')
-    
 
+    squad_t_path = os.path.join('..', '..', 'data', 'SQUAD-T-QA.tsv')
+
+    if not os.path.exists(squad_t_path):
+        raise ValueError('The SQUAD-T_QA.tsv file is missing. Please read misc_scripts/squad2QA.py and run it.')
 
 
     parser = argparse.ArgumentParser()
@@ -211,6 +213,7 @@ if __name__ == '__main__':
         q_squad = WikiReaderIterable('query', squad_t_path)
         d_squad = WikiReaderIterable('doc', squad_t_path)
         l_squad = WikiReaderIterable('label', squad_t_path)
+
 
         num_squad_samples = 447551
 
