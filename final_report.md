@@ -103,6 +103,7 @@ Basically, the metric should give a higher score to an ordering where the more r
 The metric commonly used for this are Mean Average Precision(MAP), Mean Reciprocal Rank(MRR) and Normalized Discounted Cumulative Gain(nDCG).
 
 ### Mean Average Precision (MAP)
+You can read more [here](https://en.wikipedia.org/wiki/Evaluation_measures_(information_retrieval)#Mean_average_precision)
 It is a measure to be calculated over a full dataset. A dataset like WikiQA, will have a setup like:
 
 	q_1, (d1, d2, d3)
@@ -115,6 +116,8 @@ It is a measure to be calculated over a full dataset. A dataset like WikiQA, wil
 we find the average precision for every `q_i` and then take the mean over all the `q`s
 
 Mean (Over all the queries) Average Precision(Over all the docs for a query)
+
+![alt](_images/MAP_formula.png)
 
 Some psuedo code to describe the idea:
 
@@ -136,7 +139,7 @@ We will sort our predictions based on our similarity score (Since our ordering/r
 
 	Average Precision = (Sum (Precision@k * relevance@k) for k=1 to n) / Number of Relevant documents
 
-(TODO  Insert Image Formula)
+![alt](_images/AvgPrecFormula.png)
 
 <br/>where<br/>
 
@@ -581,7 +584,7 @@ This can be remodelled such that:
 
 Effectively, we get a really big good dataset in the QA domain. The converted file is almost 110 MB.
 
-[TODO add table here]
+![alt](_images/Bidaf_T_scores.png)
 
 The new model, BiDAF-T is then trained on SQUAD-T. It gets **MAP : 0.75** on WikiQA test set.  
 When BiDAF-T is finetuned on WikiQA, it gets **MAP : 0.76**  
@@ -592,7 +595,7 @@ They call it Transfer Learning.
 
 So, as such, it's not exactly a new model. It's just  an old model(BiDAF), trained on a modified dataset and then used on WikiQA and SentEval. However, the author claims that the model does suprisingly well on both of them. The author has provided their own repo.
 
-Since, 0.79 feels like a good score, significantly (0.17) over the w2v baseline, I went about implementing it. You can find my implementation [here](TODO)
+Since, 0.79 feels like a good score, significantly (0.17) over the w2v baseline, I went about implementing it. You can find my implementation [here](https://github.com/aneesh-joshi/Similarity-Learning-Evaluation-Scripts/blob/master/sl_eval/models/bidaf_t.py) and it is called using [this](https://github.com/aneesh-joshi/Similarity-Learning-Evaluation-Scripts/blob/master/evaluation_scripts/WikiQA/eval_wikiqa.py) eval script.
 Unfortunately, the scores don't perform as well.
 
 **Steps invovled:**  
