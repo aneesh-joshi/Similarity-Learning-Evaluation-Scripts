@@ -106,6 +106,6 @@ if __name__ == '__main__':
         logger.info("Downloading all files.")
         download(wikiqa_url, wikiqa_file, args.output_dir, unzip=True)
         download(snli_url, snli_file, args.output_dir, unzip=True)
-        download(sick_url, sick_file, args.output_dir, unzip=True)
+        download(SICK_url, SICK_file, args.output_dir, unzip=True)
         download(SQUAD1_train_url, SQUAD1_train_file, args.output_dir)
         os.system('git clone ' + InsuranceQA_git_link)
