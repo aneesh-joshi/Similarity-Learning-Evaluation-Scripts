@@ -8,6 +8,11 @@ This repo contains:
 Please refer to [Report.md](Report.md) for the detailed study which explains what Similarity Learning is, the tasks that it involves and different models used for it. (Highly recommended to understand current repo)
 
 ## Getting Started
+
+You can just run the `download_and_setup.sh` script to do everything I will describe below.
+
+Also, heck out [this notebook](SLEvalDownloadExample.ipynb) which does everything from cloning this repo to setting things up (no training)
+
 ### Downloading Datasets
 We have several datasets which can be used to evaluate your Similarity Learning model. All you have to do is:
 
@@ -19,7 +24,9 @@ This will download:
 - SNLI
 - SICK
 
-Additionally, we need the Quora Duplicate Questions Dataset and Glove Embedding vectors. Luckily, they are available in [gensim-data](https://github.com/RaRe-Technologies/gensim-data) and will be automagically downloaded when needed. (You don't need to do anything)
+Additionally, we need the Quora Duplicate Questions Dataset and Glove Embedding vectors. Luckily, they are available in [gensim-data](https://github.com/RaRe-Technologies/gensim-data) and will be automagically downloaded when needed. You need to have gensim for this. gensim and other dependencies can be installed easily with:
+
+	python setup.py
 
 For getting the SQUAD-T dataset, you will have to convert the existing SQUAD dataset. For this, use the [misc_scripts/squad2QA.py](https://github.com/aneesh-joshi/Similarity-Learning-Evaluation-Scripts/blob/master/misc_scripts/squad2QA.py).
 
