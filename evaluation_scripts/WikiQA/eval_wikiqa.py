@@ -155,7 +155,7 @@ def mp_similarity_fn(q, d):
 if __name__ == '__main__':
     wikiqa_folder = os.path.join('..', '..', 'data', 'WikiQACorpus')
 
-    squad_t_path = os.path.join('..', '..', 'data_readers', 'SQUAD-T-QA+.tsv')
+    squad_t_path = os.path.join('..', '..', 'data', 'SQUAD-T-QA+.tsv')
     
 
 
@@ -214,7 +214,7 @@ if __name__ == '__main__':
 
         num_squad_samples = 447551
 
-        n_epochs = 1
+        n_epochs = 2
 
 
         batch_size = 100
