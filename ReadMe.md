@@ -11,6 +11,9 @@ Please refer to [Report.md](Report.md) for the detailed study which explains wha
 
 You can just run the `download_and_setup.sh` script to do everything I will describe below.
 
+	chmod +x download_and_setup.sh
+	./download_and_setup.sh
+
 Also, heck out [this notebook](SLEvalDownloadExample.ipynb) which does everything from cloning this repo to setting things up (no training)
 
 ### Downloading Datasets
