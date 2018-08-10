@@ -678,7 +678,7 @@ DTKS Random | 29%
   | Accuracy
 -- | --
 MatchPyramid | 53.49%
-DRMM_TKS | 51.2% (Recheck)
+DRMM_TKS | 51.2%
 MatchPyramid Random | 33%
 DRMM_TKS Random | 33%
 
@@ -780,6 +780,3 @@ This work and effort has provided:
 If anybody was to carry on with this work, I would recommend looking at the QA-Transfer model, which claims the current "State Of The Art". Although my implementation couldn't reproduce the result, I feel like there is some merit in the model. The reason for this belief is not based in QA-Transfer, but the underlying BiDAF model, which provides [two](http://demo.allennlp.org/machine-comprehension) [demos](http://allgood.cs.washington.edu:1995/) which does really well. Since there is so much discrepancies in different implementations, it would be better to use the [ported tf1.8 BiDAF](https://github.com/Vimos/bi-att-flow/tree/tf1.8)  
 If you are looking to do "newer research", I would recommend you do what the authors of QA-Transfer did. They looked at the best performing model on the SQUAD 1.1 dataset, pretrained on it, removed the last layer and evaluated. Things have changed since: There is a newer better SQUAD (2.0) and that leader board has got a new "best" model. In fact, BiDAF model is no longer the best on SQUAD 1.1 or 2.0. Just take the current best model and do the pretraining!
 If there's anything to take away from QA-Transfer, it's that span supervision and pretraining can be good ideas. This, especially, seems to be a new trend regarding [Language Models](http://ruder.io/nlp-imagenet/)  
-
-## References
-[1] [Wikipedia article on Similarity Learning](https://en.wikipedia.org/wiki/Similarity_learning)

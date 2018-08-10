@@ -125,6 +125,3 @@ if __name__ == '__main__':
 	print('Results on MatchPyramid with Quora Duplicate Questions dataset')
 	print('Accuracy = %.2f' % accuracy*100)
 	print('Predicted %d correct out of a totol of %d' % (num_correct, num_total))
-
-
-

@@ -23,34 +23,21 @@ if __name__ == '__main__':
 	word_embedding_len = 300
 	kv_model = api.load('glove-wiki-gigaword-' + str(word_embedding_len))
 
-
-	if baseline:
-	batch_size = 15
-	text_maxlen = 200
-	n_epochs = 1#5 
-
-	steps_per_epoch = 1
-	else:
-	steps_per_epoch = len(train_x1)//batch_size
-	
+	print('Training on SICK with MatchPyramid')	
 	batch_size = 50
 	text_maxlen = 200
 	n_epochs = 5 
-
 	mp_model = MatchPyramid(queries=train_x1, docs=train_x2, labels=train_labels, target_mode='inference',
 	                     word_embedding=kv_model, epochs=n_epochs, text_maxlen=text_maxlen, batch_size=batch_size, steps_per_epoch=steps_per_epoch)
 	num_correct, num_total, accuracy = mp_model.evaluate_inference(test_x1, test_x2, test_labels)
 	print('Results on MatchPyramid with SICK dataset')
-
-	print('Accuracy = %.2f' % accuracy)
-
+	print('Accuracy = %.2f' % (accuracy*100))
 	print('Predicted %d correct out of a total of %d' % (num_correct, num_total))
 
+	print('Training on SICK with DRMM_TKS')	
 	batch_size = 50
 	text_maxlen = 200
-	n_epochs = 5 
-
-
+	n_epochs = 5
 	dtks_model = DRMM_TKS(queries=train_x1, docs=train_x2, labels=train_labels, target_mode='inference',
 	                     word_embedding=kv_model, epochs=n_epochs, text_maxlen=text_maxlen, batch_size=batch_size,
 	                     steps_per_epoch=steps_per_epoch)

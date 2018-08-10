@@ -20,13 +20,8 @@ if __name__ == '__main__':
 
 	print('There are %d training samples' % len(train_x1))
 
-	if baseline:
-	batch_size = 15#50
-	text_maxlen = 200
-	n_epochs = 1#5 
-	steps_per_epoch = len(train_x1)//batch_size
-	steps_per_epoch = 1
 	
+	print('Training on SNLI with MatchPyramid')
 	batch_size = 50
 	text_maxlen = 200
 	n_epochs = 5 
@@ -36,16 +31,11 @@ if __name__ == '__main__':
 	                     word_embedding=kv_model, epochs=n_epochs, text_maxlen=text_maxlen, batch_size=batch_size, steps_per_epoch=steps_per_epoch)
 	num_correct, num_total, accuracy = mp_model.evaluate_inference(test_x1, test_x2, test_labels)
 	print('Results on MatchPyramid with SICK dataset')
-	print('Accuracy = %.2f' % accuracy*100)
+	print('Accuracy = %.2f' % (accuracy*100))
 	print('Predicted %d correct out of a totol of %d' % (num_correct, num_total))
 
 	
-	batch_size = 15#50
-	text_maxlen = 200
-	n_epochs = 1#5 
-	steps_per_epoch = len(train_x1)//batch_size
-	steps_per_epoch = 1
-	
+	print('Training on SNLI with DRMM_TKS')
 	batch_size = 50
 	text_maxlen = 200
 	n_epochs = 5 
@@ -54,7 +44,7 @@ if __name__ == '__main__':
 	dtks_model = DRMM_TKS(queries=train_x1, docs=train_x2, labels=train_labels, target_mode='inference', word_embedding=kv_model,
 						  epochs=n_epochs, text_maxlen=text_maxlen, batch_size=batch_size, steps_per_epoch=steps_per_epoch)
 	num_correct, num_total, accuracy = dtks_model.evaluate_inference(test_x1, test_x2, test_labels)
-	print('Results on MatchPyramid with SICK dataset')
-	print('Accuracy = %.2f' % accuracy*100)
-	print('Predicted %d correct out of a totol of %d' % (num_correct, num_total))
+	print('Results on DRMM_TKS with SICK dataset')
+	print('Accuracy = %.2f' % (accuracy*100))
+	print('Predicted %d correct out of a total of %d' % (num_correct, num_total))
 
