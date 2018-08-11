@@ -112,16 +112,16 @@ if __name__ == '__main__':
 							steps_per_epoch=num_samples//batch_size)
 	num_correct, num_total, accuracy = mp_model.evaluate_classification(test_q1, test_q2, test_duplicate, batch_size=20)
 	print('Results on MatchPyramid with Quora Duplicate Questions dataset')
-	print('Accuracy = %.2f' % accuracy*100)
+	print('Accuracy = %.2f' % (accuracy*100))
 	print('Predicted %d correct out of a totol of %d' % (num_correct, num_total))
 
 	n_epochs = 10 
 	batch_size = 10
-	text_maxlen = 200
+	text_maxlen = 80
 	dtks_model = DRMM_TKS(queries=train_q1, docs=train_q2, labels=train_duplicate, target_mode='classification',
 	                     word_embedding=kv_model, epochs=n_epochs, text_maxlen=text_maxlen, batch_size=batch_size,
 	                     steps_per_epoch=num_samples//batch_size)
 	num_correct, num_total, accuracy = dtks_model.evaluate_classification(test_q1, test_q2, test_duplicate, batch_size=20)
-	print('Results on MatchPyramid with Quora Duplicate Questions dataset')
-	print('Accuracy = %.2f' % accuracy*100)
+	print('Results on DRMM_TKS with Quora Duplicate Questions dataset')
+	print('Accuracy = %.2f' % (accuracy*100))
 	print('Predicted %d correct out of a totol of %d' % (num_correct, num_total))

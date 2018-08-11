@@ -186,6 +186,8 @@ if __name__ == '__main__':
 
     steps_per_epoch = len(train_q)//batch_size
 
+
+    print('Training on InsuranceQA with MatchPyramid')
     mp_model = MatchPyramid(queries=train_q, docs=train_d, labels=train_l, target_mode='ranking',
                           word_embedding=kv_model, epochs=n_epochs, text_maxlen=text_maxlen, batch_size=batch_size,
                           steps_per_epoch=steps_per_epoch)
@@ -211,6 +213,7 @@ if __name__ == '__main__':
     pred2_save_name_dtks = 'pred_test2_dtks'
     # --------------------------------------------------------------------
 
+    print('Training on InsuranceQA with DRMM_TKS')
     dtks_model = DRMM_TKS(queries=train_q, docs=train_d, labels=train_l, target_mode='ranking',
                           word_embedding=kv_model, epochs=n_epochs, text_maxlen=text_maxlen, batch_size=batch_size,
                           steps_per_epoch=steps_per_epoch)
