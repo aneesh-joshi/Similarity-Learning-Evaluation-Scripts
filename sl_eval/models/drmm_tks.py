@@ -947,9 +947,7 @@ class DRMM_TKS(utils.SaveLoad):
 
                 for tx, ty in zip(test_X, test_Y):
                     this_pred = self.model.predict(tx)
-                    print(this_pred)
                     for pred_val, true_val in zip(this_pred, ty):
-                        print(pred_val, true_val)
                         if np.argmax(pred_val) == np.argmax(true_val):
                             num_correct += 1
                         num_total += 1
@@ -985,9 +983,7 @@ class DRMM_TKS(utils.SaveLoad):
 
                 for tx, ty in zip(test_X, test_Y):
                     this_pred = self.model.predict(tx)
-                    print(this_pred)
                     for pred_val, true_val in zip(this_pred, ty):
-                        print(pred_val, true_val)
                         if np.argmax(pred_val) == np.argmax(true_val):
                             num_correct += 1
                         num_total += 1
