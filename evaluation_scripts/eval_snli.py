@@ -31,7 +31,7 @@ if __name__ == '__main__':
 	mp_model = MatchPyramid(queries=train_x1, docs=train_x2, labels=train_labels, target_mode='inference',
 	                     word_embedding=kv_model, epochs=n_epochs, text_maxlen=text_maxlen, batch_size=batch_size, steps_per_epoch=steps_per_epoch)
 	num_correct, num_total, accuracy = mp_model.evaluate_inference(test_x1, test_x2, test_labels)
-	print('Results on MatchPyramid with SICK dataset')
+	print('Results on MatchPyramid with SNLI dataset')
 	print('Accuracy = %.2f' % (accuracy*100))
 	print('Predicted %d correct out of a totol of %d' % (num_correct, num_total))
 
@@ -45,7 +45,7 @@ if __name__ == '__main__':
 	dtks_model = DRMM_TKS(queries=train_x1, docs=train_x2, labels=train_labels, target_mode='inference', word_embedding=kv_model,
 						  epochs=n_epochs, text_maxlen=text_maxlen, batch_size=batch_size, steps_per_epoch=steps_per_epoch)
 	num_correct, num_total, accuracy = dtks_model.evaluate_inference(test_x1, test_x2, test_labels)
-	print('Results on DRMM_TKS with SICK dataset')
+	print('Results on DRMM_TKS with SNLI dataset')
 	print('Accuracy = %.2f' % (accuracy*100))
 	print('Predicted %d correct out of a total of %d' % (num_correct, num_total))
 

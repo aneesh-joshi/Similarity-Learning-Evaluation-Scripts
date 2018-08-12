@@ -659,7 +659,7 @@ ndcg_cut_20 | 0.6993 | 0.7101 | 0.7208 | 0.7211 | 0.7115 | 0.0012 | 0.0012 | 0.0
   | Accuracy
 -- | --
 MatchPyramid | 69.20%
-DRMM TKS | 67.05%
+DRMM TKS | 68.49%
 Word2Vec Baseline | 37.02%
 
 
@@ -668,17 +668,17 @@ Word2Vec Baseline | 37.02%
 
   | Accuracy
 -- | --
-MatchPyramid | 57.67%
+MatchPyramid | 56.82%
 MatchPyramid Random | 23%
-DTKS | 56.81%
+DTKS | 57.00%
 DTKS Random | 29%
 
 ### SNLI
 
   | Accuracy
 -- | --
-MatchPyramid | 53.49%
-DRMM_TKS | 51.2%
+MatchPyramid | 53.57%
+DRMM_TKS | 43.15%
 MatchPyramid Random | 33%
 DRMM_TKS Random | 33%
 
@@ -715,7 +715,6 @@ P_100 | 0.0145 | 0.0144 | 0.0145 | 0.0145 | 0.0144
 P_200 | 0.0073 | 0.0072 | 0.0073 | 0.0073 | 0.0072
 P_500 | 0.0029 | 0.0029 | 0.0029 | 0.0029 | 0.0029
 P_1000 | 0.0015 | 0.0014 | 0.0015 | 0.0015 | 0.0014
-
 
 
 #### DRMM_TKS

@@ -18,7 +18,6 @@ if __name__ == '__main__':
 	train_x1, train_x2, train_labels = x1['TRAIN'], x2['TRAIN'], label['TRAIN']
 	test_x1, test_x2, test_labels = x1['TEST'], x2['TEST'], label['TEST']
 
-	steps_per_epoch = len(train_x1)//batch_size
 
 	word_embedding_len = 300
 	kv_model = api.load('glove-wiki-gigaword-' + str(word_embedding_len))
@@ -26,7 +25,9 @@ if __name__ == '__main__':
 	print('Training on SICK with MatchPyramid')	
 	batch_size = 50
 	text_maxlen = 200
-	n_epochs = 5 
+	n_epochs = 5
+ 
+	steps_per_epoch = len(train_x1)//batch_size
 	mp_model = MatchPyramid(queries=train_x1, docs=train_x2, labels=train_labels, target_mode='inference',
 	                     word_embedding=kv_model, epochs=n_epochs, text_maxlen=text_maxlen, batch_size=batch_size, steps_per_epoch=steps_per_epoch)
 	num_correct, num_total, accuracy = mp_model.evaluate_inference(test_x1, test_x2, test_labels)
@@ -43,5 +44,5 @@ if __name__ == '__main__':
 	                     steps_per_epoch=steps_per_epoch)
 	num_correct, num_total, accuracy = dtks_model.evaluate_inference(test_x1, test_x2, test_labels)
 	print('Results on DRMM_TKS with SICK dataset')
-	print('Accuracy = %.2f' % accuracy*100)
+	print('Accuracy = %.2f' % (accuracy*100))
 	print('Predicted %d correct out of a total of %d' % (num_correct, num_total))

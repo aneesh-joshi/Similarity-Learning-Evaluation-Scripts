@@ -107,6 +107,7 @@ if __name__ == '__main__':
 	n_epochs = 10
 	batch_size = 100
 	text_maxlen = 80
+	
 	mp_model = MatchPyramid(queries=train_q1, docs=train_q2, labels=train_duplicate, target_mode='classification',
 							word_embedding=kv_model, epochs=n_epochs, text_maxlen=text_maxlen, batch_size=batch_size,
 							steps_per_epoch=num_samples//batch_size)
@@ -114,10 +115,11 @@ if __name__ == '__main__':
 	print('Results on MatchPyramid with Quora Duplicate Questions dataset')
 	print('Accuracy = %.2f' % (accuracy*100))
 	print('Predicted %d correct out of a totol of %d' % (num_correct, num_total))
+        
 
-	n_epochs = 10 
+	n_epochs = 2 
 	batch_size = 10
-	text_maxlen = 80
+	text_maxlen = 100
 	dtks_model = DRMM_TKS(queries=train_q1, docs=train_q2, labels=train_duplicate, target_mode='classification',
 	                     word_embedding=kv_model, epochs=n_epochs, text_maxlen=text_maxlen, batch_size=batch_size,
 	                     steps_per_epoch=num_samples//batch_size)
