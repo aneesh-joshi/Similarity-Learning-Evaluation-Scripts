@@ -5,7 +5,7 @@
 2. Similarity Learning Tasks
 3. Evaluation Metrics
 4. Establishing Baselines
-5. About Datasets
+5. About Datasets and Models
 6. The journey
 7. Benchmarked Models
 8. Notes on Finetuning Models
@@ -27,14 +27,12 @@ We have to develop a function, `similarity_fn` such that<br/>
 
 As such, Similarity Learning does not require Neural Networks (tf-idf and other such sentence representations can work as well). However, with the recent domination of Deep Learning in NLP, newer models have been performing the best on Similarity Learning tasks.
 
-The idea of finding similarities can be used in the following ways [1]:<br/>
+The idea of finding similarities can be used in the following ways :<br/>
 **1. Regresssion Similarity Learning:** given `document1` and `document2` we need a `similiarity measure` as a float value.
 
 **2. Classification Similarity Learning:** given `document1` and `document2` we need to classify them as similar or disimilar
 
 **3. Ranking Similarity Learning:** given `document`, `similar-document` and `disimilar-document`, we want to learn a `similarity_function` such that `similarity_function(document, similar-document)  > similarity_function(document, disimilar-document)`
-
-**4. Locality Sensitivity Hashing:** hashes input items so that similar items map to the same "buckets" in memory with high probability.
 
 
 <br/>Usually, the similarity can be measures like:
@@ -59,11 +57,13 @@ Conversation/Respone Selection is similar to Question Answering, for a given Que
 
 **2. Textual Entailment**  
 Given a text and a hypothesis, the model must make a judgement to classify the text
-<br/>Example from [SNLI](https://nlp.stanford.edu/projects/snli/)
+<br/>Example from [SICK]( http://clic.cimec.unitn.it/composes/sick.html):
 
-	- "A man selling donuts to a customer during a world exhibition event held in the city of Angeles" -- "A man selling donuts to a customer." --> Entailment
-	- "Two young boys of opposing teams play football, while wearing full protection uniforms and helmets." -- "boys scoring a touchdown" --> Neutral
-	- "Under a blue sky with white clouds, a child reaches up to touch the propeller of a plane standing parked on a field of grass." -- "A child is playing with a ball." --> Contradiction
+<table>
+<tr><td>The young boys are playing outdoors and the man is smiling nearby</td><td>There is no boy playing outdoors and there is no man smiling</td><td>CONTRADICTION</td></tr>
+<tr><td>A skilled person is riding a bicycle on one wheel</td><td>A person is riding the bicycle on one wheel</td><td>ENTAILMENT</td></tr>
+<tr><td>The kids are playing outdoors near a man with a smile</td><td>A group of kids is playing in a yard and an old man is standing in the background</td><td>NEUTRAL</td></tr>
+</table>
 
 **3. Duplicate Document Detection/Paraphrase Detection**  
 Given 2 docs/sentences/questions we want to predict the probablity of the two questions being duplicate<br/>
@@ -117,15 +117,17 @@ we find the average precision for every `q_i` and then take the mean over all th
 
 Mean (Over all the queries) Average Precision(Over all the docs for a query)
 
-![alt](_images/MAP_formula.png)
+![alt](https://raw.githubusercontent.com/aneesh-joshi/Similarity-Learning-Evaluation-Scripts/master/_images/MAP_formula.png)
 
 Some psuedo code to describe the idea:
 
-	num_queries = len(queries)
-	precision = 0
-	for q, candidate_docs in zip(queries, docs):
-	    precision += average_precision(q, candidate_docs)
-	mean_average_precision = precision / num_queries
+```python
+num_queries = len(queries)
+precision = 0
+for q, candidate_docs in zip(queries, docs):
+    precision += average_precision(q, candidate_docs)
+mean_average_precision = precision / num_queries
+```
 
 I will solve an example here:
 
@@ -139,7 +141,7 @@ We will sort our predictions based on our similarity score (Since our ordering/r
 
 	Average Precision = (Sum (Precision@k * relevance@k) for k=1 to n) / Number of Relevant documents
 
-![alt](_images/AvgPrecFormula.png)
+![alt](https://raw.githubusercontent.com/aneesh-joshi/Similarity-Learning-Evaluation-Scripts/master/_images/AvgPrecFormula.png)
 
 <br/>where<br/>
 
@@ -188,7 +190,7 @@ Therefore, Average Precision for q1
 To get Mean Average Precision, we calculate Average Precision for all `q`s in it and average it/take the mean.
 
 ### Normalized Discounted Cumulative Gain
-[This](https://en.wikipedia.org/wiki/Discounted_cumulative_gain) Wikipedia Article is a great source for understanding NDCG.
+[This Wikipedia Article](https://en.wikipedia.org/wiki/Discounted_cumulative_gain) is a great source for understanding NDCG.
 First, let's understand Discounted Cumulative Gain.
 > The premise of DCG is that highly relevant documents appearing lower in a search result list should be penalized as the graded relevance value is reduced logarithmically proportional to the position of the result.
 
@@ -224,14 +226,14 @@ In some cases for non-binary retrieval problem, we use both nDCG & mAP such as m
 #### About implementing MAP
 While the idea of the metric seems easy, there are varying implementations of it which can be found below in the section "MatchZoo Baselines". Ideally, the most trusted metric implementations should be the one provided by [TREC](https://en.wikipedia.org/wiki/Text_Retrieval_Conference) and I would imagine that's what people use when publishing results.
 
-###### About TREC and trec_eval
+#### About TREC and trec_eval
 The **T**ext**Re**trieval**C**onference(TREC) is an ongoing series of workshops focusing on a list of different information retrieval (IR) research areas, or tracks. They provide a standard method of evaluating QA systems called `trec_eval`. It's a C binary whose code can be found [here](https://github.com/usnistgov/trec_eval)
 
 
 Please refer to [this blog](http://www.rafaelglater.com/en/post/learn-how-to-use-trec_eval-to-evaluate-your-information-retrieval-system) to get a complete understanding of trec
 
 Here's the short version:  
-As the above tutorial link will tell, you will have to download the TREC evaluation code from https://trec.nist.gov/trec_eval/
+As the above tutorial link will tell, you will have to download the TREC evaluation code from [here](https://trec.nist.gov/trec_eval/)
 run `make` in the folder and it will produce the `trec_eval` binary.
 
 The binary requires 2 inputs:
@@ -296,7 +298,7 @@ In our journey of developing a similarity learning model, we first decided to us
 ### Word2Vec Baseline
 To understand the level of improvement we could make, we set up a baseline using word2vec. We use the average of word vectors in a sentence to get the vector for a sentence/document.
 
-	"Hello World" -> (vec("Hello") + vec("World"))/2
+```"Hello World" -> (vec("Hello") + vec("World"))/2```
 
 When 2 documents are to be compared for similarity/relevance, we take the Cosine Similarity between their vectors as their similarity. (300 dimensional vectors were seen to perform the best, so we chose them.)
 
@@ -309,74 +311,78 @@ I tried to reproduce their results using their scripts but found that the scores
 
 I developed a table with my baselines as below:
 
-![alt](https://github.com/aneesh-joshi/aneesh-joshi.github.io/blob/master/_posts/images/ranged%20benchmarks%20mz.PNG)
+![alt](https://github.com/aneesh-joshi/aneesh-joshi.github.io/blob/master/_posts/images/ranged%20benchmarks%20mz.PNG?raw=true)
 
 **Note:** the values are different from the established baseline because there is some discrepancy on how MAP should be calculated. I initially used my implementation of it for the table. Later, I moved to that provided by trec.
 This is how I implement it:
 
-	def mapk(Y_true, Y_pred):
-	    """Calculates Mean Average Precision(MAP) for a given set of Y_true, Y_pred
 
-	    Note: Currently doesn't support mapping at k. Couldn't use only map as it's a
-	    reserved word
+```python
+def mapk(Y_true, Y_pred):
+    """Calculates Mean Average Precision(MAP) for a given set of Y_true, Y_pred
 
-	    Parameters
-	    ----------
-	    Y_true : numpy array or list of ints either 1 or 0
-	        Contains the true, ground truth values of the relevance between a query and document
-	    Y_pred : numpy array or list of floats
-	        Contains the predicted similarity score between a query and document
+    Note: Currently doesn't support mapping at k. Couldn't use only map as it's a
+    reserved word
 
-	    Examples
-	    --------
-	    >>> Y_true = [[0, 1, 0, 1], [0, 0, 0, 0, 1, 0], [0, 1, 0]]
-	    >>> Y_pred = [[0.1, 0.2, -0.01, 0.4], [0.12, -0.43, 0.2, 0.1, 0.99, 0.7], [0.5, 0.63, 0.92]]
-	    >>> print(mapk(Y_true, Y_pred))
-	    0.75
-	    """
+    Parameters
+    ----------
+    Y_true : numpy array or list of ints either 1 or 0
+        Contains the true, ground truth values of the relevance between a query and document
+    Y_pred : numpy array or list of floats
+        Contains the predicted similarity score between a query and document
 
-	    aps = []
-	    n_skipped = 0
-	    for y_true, y_pred in zip(Y_true, Y_pred):
-	        # skip datapoints where there is no solution
-	        if np.sum(y_true) < 1:
-	            n_skipped += 1
-	            continue
+    Examples
+    --------
+    >>> Y_true = [[0, 1, 0, 1], [0, 0, 0, 0, 1, 0], [0, 1, 0]]
+    >>> Y_pred = [[0.1, 0.2, -0.01, 0.4], [0.12, -0.43, 0.2, 0.1, 0.99, 0.7], [0.5, 0.63, 0.92]]
+    >>> print(mapk(Y_true, Y_pred))
+    0.75
+    """
 
-	        pred_sorted = sorted(zip(y_true, y_pred), key=lambda x: x[1], reverse=True)
-	        avg = 0
-	        n_relevant = 0
+    aps = []
+    n_skipped = 0
+    for y_true, y_pred in zip(Y_true, Y_pred):
+        # skip datapoints where there is no solution
+        if np.sum(y_true) < 1:
+            n_skipped += 1
+            continue
 
-	        for i, val in enumerate(pred_sorted):
-	            if val[0] == 1:
-	                avg += 1. / (i + 1.)
-	                n_relevant += 1
+        pred_sorted = sorted(zip(y_true, y_pred), key=lambda x: x[1], reverse=True)
+        avg = 0
+        n_relevant = 0
 
-	        if n_relevant != 0:
-	            ap = avg / n_relevant
-	            aps.append(ap)
-	    return np.mean(np.array(aps))
+        for i, val in enumerate(pred_sorted):
+            if val[0] == 1:
+                avg += 1. / (i + 1.)
+                n_relevant += 1
 
+        if n_relevant != 0:
+            ap = avg / n_relevant
+            aps.append(ap)
+    return np.mean(np.array(aps))
+```
 
 This is how it's implemented in MatchZoo:
 
-	def map(y_true, y_pred, rel_threshold=0):
-	    s = 0.
-	    y_true = _to_list(np.squeeze(y_true).tolist())
-	    y_pred = _to_list(np.squeeze(y_pred).tolist())
-	    c = list(zip(y_true, y_pred))
-	    random.shuffle(c)
-	    c = sorted(c, key=lambda x:x[1], reverse=True)
-	    ipos = 0
-	    for j, (g, p) in enumerate(c):
-	        if g > rel_threshold:
-	            ipos += 1.
-	            s += ipos / ( j + 1.)
-	    if ipos == 0:
-	        s = 0.
-	    else:
-	        s /= ipos
-	    return s
+```python
+def map(y_true, y_pred, rel_threshold=0):
+    s = 0.
+    y_true = _to_list(np.squeeze(y_true).tolist())
+    y_pred = _to_list(np.squeeze(y_pred).tolist())
+    c = list(zip(y_true, y_pred))
+    random.shuffle(c)
+    c = sorted(c, key=lambda x:x[1], reverse=True)
+    ipos = 0
+    for j, (g, p) in enumerate(c):
+        if g > rel_threshold:
+            ipos += 1.
+            s += ipos / ( j + 1.)
+    if ipos == 0:
+        s = 0.
+    else:
+        s /= ipos
+    return s
+```
 
 The above has a random shuffle because it prevents false numbers. Refer to [this](https://github.com/faneshion/MatchZoo/issues/232) issue.
 
@@ -398,38 +404,46 @@ This loss function is especially good for Ranking Problems. More details can be 
 
 Let's look at the keras definitions to get a better idea of the intuition
 
-	def hinge(y_true, y_pred):
-	    return K.mean(K.maximum(1. - y_true * y_pred, 0.), axis=-1)
+```python
+def hinge(y_true, y_pred):
+    return K.mean(K.maximum(1. - y_true * y_pred, 0.), axis=-1)
+```
 
 In this case, the y_true can be {1, -1}
 For example, y_true = [1 , -1, 1] , y_pred = [0.6, 0.1, -0.9]
 
-	K.mean(K.maximum(1 - [1, -1, 1] * [0.6, 0.1, -0.9], 0))
-	= K.mean(K.maximum(1 - [0.6, -0.1, -0.9], 0))
-	= K.mean(K.maximum([0.4, 1.1, 1.9], 0))
-	= K.mean([0.4, 1.1, 1.9])
-
+```python
+K.mean(K.maximum(1 - [1, -1, 1] * [0.6, 0.1, -0.9], 0))
+= K.mean(K.maximum(1 - [0.6, -0.1, -0.9], 0))
+= K.mean(K.maximum([0.4, 1.1, 1.9], 0))
+= K.mean([0.4, 1.1, 1.9])
+```
 Effectively, the more wrong answers contribute more to the loss
 
-	def categorical_hinge(y_true, y_pred):
-	    pos = K.sum(y_true * y_pred, axis=-1)
-	    neg = K.max((1.0 - y_true) * y_pred, axis=-1)
-	    return K.mean(K.maximum(0.0, neg - pos + 1), axis=-1)
+```python
+def categorical_hinge(y_true, y_pred):
+    pos = K.sum(y_true * y_pred, axis=-1)
+    neg = K.max((1.0 - y_true) * y_pred, axis=-1)
+    return K.mean(K.maximum(0.0, neg - pos + 1), axis=-1)
+```
 
 In this case, there is a categorization, so the true values are one hots  
 For example, y_true = [[1, 0, 0], [0, 0, 1]], y_pred = [[0.8, 0.1, 0.1], [0.7, 0.2, 0.1]]
 
-	pos = K.sum([[1, 0, 0], [0, 0, 1]] * [[0.9, 0.1, 0.1], [0.7, 0.2, 0.1]], axis=-1)
-	    = K.sum([[0.9, 0, 0], [0, 0, 0.1]], axis=-1)  # check the predictions for the correct answer
-	    = [0.9, 0.1]
-	neg = K.max((1.0 - [[1, 0, 0], [0, 0, 1]]) * [[0.8, 0.1, 0.1], [0.7, 0.2, 0.1]], axis=-1)
-	    = K.max([[0, 1, 1], [1, 1, 0]] * [[0.8, 0.1, 0.1], [0.7, 0.2, 0.1]], axis=-1)
-	    = K.max([[0, 0.1, 0.1], [0.7, 0.2, 0]], axis=-1)
-	    = [0.1, 0.7]
-	loss = K.mean(K.maximum(0.0, neg - pos + 1), axis=-1)
-	     = K.mean(K.maximum(0.0, [0.1, 0.7] - [0.9, 0.1] + 1), axis=-1)
-         = K.mean(K.maximum(0.0, [0.2, 1.6]), axis=-1)
-         = K.mean([0.2, 1.6])
+
+```python
+pos = K.sum([[1, 0, 0], [0, 0, 1]] * [[0.9, 0.1, 0.1], [0.7, 0.2, 0.1]], axis=-1)
+    = K.sum([[0.9, 0, 0], [0, 0, 0.1]], axis=-1)  # check the predictions for the correct answer
+    = [0.9, 0.1]
+neg = K.max((1.0 - [[1, 0, 0], [0, 0, 1]]) * [[0.8, 0.1, 0.1], [0.7, 0.2, 0.1]], axis=-1)
+    = K.max([[0, 1, 1], [1, 1, 0]] * [[0.8, 0.1, 0.1], [0.7, 0.2, 0.1]], axis=-1)
+    = K.max([[0, 0.1, 0.1], [0.7, 0.2, 0]], axis=-1)
+    = [0.1, 0.7]
+loss = K.mean(K.maximum(0.0, neg - pos + 1), axis=-1)
+     = K.mean(K.maximum(0.0, [0.1, 0.7] - [0.9, 0.1] + 1), axis=-1)
+     = K.mean(K.maximum(0.0, [0.2, 1.6]), axis=-1)
+     = K.mean([0.2, 1.6])
+```
 
 Again, effectively, the more wrong value (0.7) contributes more to the loss, whereas the correct value(0.9) reduces it greatly
 
@@ -458,31 +472,92 @@ We take two docs and try to rank them as compared to each other. "x1 is more rel
 > Listwise approaches directly look at the entire list of documents and try to come up with the optimal ordering for it
 
 
-## 5. About Datasets
+## 5. About Datasets and Models
 Here, I will give examples of different datasets.
 
-
-Dataset Name | Link | Suggested Metrics | Some Papers that use the dataset | Brief Description
--- | -- | -- | -- | --
-WikiQA | <ul><li>[Dataset](https://download.microsoft.com/download/E/5/F/E5FCFCEE-7005-4814-853D-DAA7C66507E0/WikiQACorpus.zip)</li><li>[Paper](https://aclweb.org/anthology/D15-1237)</li></ul> | <ul><li>MAP</li><li>MRR</li></ul> | <ul><li>SeqMatchSeq(`MULT` MAP=0.74, MRR=0.75)</li><li>BiMPM(MAP=0.71, MRR=0.73)</li><li>QA-Transfer(`SQUAD*` MAP=0.83, MRR=84.58, P@1=75.31)</li></ul> | Question-Candidate_Answer1_to_N-Relevance1_to_N
-SQUAD 2.0 | [Website](https://rajpurkar.github.io/SQuAD-explorer/) | <ul><li>Exact Match</li><li>F1</li></ul> | QA-Transfer(for pretraining) | Question-Context-Answer_Range_in_context
-Quora Duplicate Question Pairs | <ul><li>gensim-data(quora-duplicate-questions)</li><li>[Quora Official](https://data.quora.com/First-Quora-Dataset-Release-Question-Pairs)</li><li>[Kaggle](https://www.kaggle.com/c/quora-question-pairs)</li></ul> | Accuracy, F1 | <ul><li>BiMPM(Acc=88.17%)</li><ul> | Q1-Q2-DuplicateProbablity
-Sem Eval 2016 Task 3A | genism-data(semeval-2016-2017-task3-subtaskA-unannotated) | <ul><li>MAP</li><li>AvgRecall</li><li>MRR</li><li>P</li><li>R</li><li>F1</li><li>Acc</li> | QA-Transfer(`SQUAD*` MAP=80.2, MRR=86.4, P@1=89.1) | Question-Comment-SimilarityProbablity
-MovieQA | <ul><li>[Paper](http://movieqa.cs.toronto.edu/static/files/CVPR2016_MovieQA.pdf)</li><li>[Website](http://movieqa.cs.toronto.edu/home/)</li></ul> | Accuracy | SeqMatchSeq(`SUBMULT+NN` test=72.9%, dev=72.1%) | Plot-Question-Candidate_Answers
-InsuranceQA | [Website](https://github.com/shuzi/insuranceQA) | Accuracy | SeqMatchSeq(`SUBMULT+NN` test1=75.6%, test2=72.3%, dev=77%) | Question-Ground_Truth_Answer-Candidate_answer
-SNLI | <ul><li>[Paper](https://nlp.stanford.edu/pubs/snli_paper.pdf)</li><li>[Website](https://nlp.stanford.edu/projects/snli/)</li></ul> | Accuracy | <ul><li>QA-Transfer(for pretraining)</li><li>SeqMatchSeq(`SUBMULT+NN` train=89.4%, test=86.8%)</li><li>BiMPM()`Ensemble` Acc=88.8%)</li></ul> | Text-Hypothesis-Judgement
-TRECQA | <ul><li>https://aclweb.org/aclwiki/Question_Answering_(State_of_the_art)</li><li>https://github.com/castorini/data/tree/master/TrecQA</li><li>http://cs.jhu.edu/~xuchen/packages/jacana-qa-naacl2013-data-results.tar.bz2</li></ul> | <ul><li>MAP</li><li>MRR</li></ul> | BiMPM(MAP:0.802, MRR:0.875) | Question-Candidate_Answer1_to_N-relevance1_to_N
-SICK | [Website](http://clic.cimec.unitn.it/composes/sick.html) | Accuracy | QA-Transfer(Acc=88.2) | sent1-sent2-entailment_label-relatedness_score
+<table>
+<thead>
+<tr>
+<th>Dataset Name</th>
+<th>Link</th>
+<th>Suggested Metrics</th>
+<th>Some Papers that use the dataset</th>
+<th>Brief Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>WikiQA</td>
+<td><ul><li><a href="https://download.microsoft.com/download/E/5/F/E5FCFCEE-7005-4814-853D-DAA7C66507E0/WikiQACorpus.zip" rel="nofollow">Dataset</a></li><li><a href="https://aclweb.org/anthology/D15-1237" rel="nofollow">Paper</a></li></ul></td>
+<td><ul><li>MAP</li><li>MRR</li></ul></td>
+<td><ul><li>SeqMatchSeq(<code>MULT</code> MAP=0.74, MRR=0.75)</li><li>BiMPM(MAP=0.71, MRR=0.73)</li><li>QA-Transfer(<code>SQUAD*</code> MAP=0.83, MRR=84.58, P@1=75.31)</li></ul></td>
+<td>Question-Candidate_Answer1_to_N-Relevance1_to_N</td>
+</tr>
+<tr>
+<td>SQUAD 2.0</td>
+<td><a href="https://rajpurkar.github.io/SQuAD-explorer/" rel="nofollow">Website</a></td>
+<td><ul><li>Exact Match</li><li>F1</li></ul></td>
+<td>QA-Transfer(for pretraining)</td>
+<td>Question-Context-Answer_Range_in_context</td>
+</tr>
+<tr>
+<td>Quora Duplicate Question Pairs</td>
+<td><ul><li>gensim-data(quora-duplicate-questions)</li><li><a href="https://data.quora.com/First-Quora-Dataset-Release-Question-Pairs" rel="nofollow">Quora Official</a></li><li><a href="https://www.kaggle.com/c/quora-question-pairs" rel="nofollow">Kaggle</a></li></ul></td>
+<td>Accuracy, F1</td>
+<td><ul><li>BiMPM(Acc=88.17%)</li><ul></ul></ul></td>
+<td>Q1-Q2-DuplicateProbablity</td>
+</tr>
+<tr>
+<td>Sem Eval 2016 Task 3A</td>
+<td>genism-data(semeval-2016-2017-task3-subtaskA-unannotated)</td>
+<td><ul><li>MAP</li><li>AvgRecall</li><li>MRR</li><li>P</li><li>R</li><li>F1</li><li>Acc</li></ul></td>
+<td>QA-Transfer(<code>SQUAD*</code> MAP=80.2, MRR=86.4, P@1=89.1)</td>
+<td>Question-Comment-SimilarityProbablity</td>
+</tr>
+<tr>
+<td>MovieQA</td>
+<td><ul><li><a href="http://movieqa.cs.toronto.edu/static/files/CVPR2016_MovieQA.pdf" rel="nofollow">Paper</a></li><li><a href="http://movieqa.cs.toronto.edu/home/" rel="nofollow">Website</a></li></ul></td>
+<td>Accuracy</td>
+<td>SeqMatchSeq(<code>SUBMULT+NN</code> test=72.9%, dev=72.1%)</td>
+<td>Plot-Question-Candidate_Answers</td>
+</tr>
+<tr>
+<td>InsuranceQA</td>
+<td><a href="https://github.com/shuzi/insuranceQA">Website</a></td>
+<td>Accuracy</td>
+<td>SeqMatchSeq(<code>SUBMULT+NN</code> test1=75.6%, test2=72.3%, dev=77%)</td>
+<td>Question-Ground_Truth_Answer-Candidate_answer</td>
+</tr>
+<tr>
+<td>SNLI</td>
+<td><ul><li><a href="https://nlp.stanford.edu/pubs/snli_paper.pdf" rel="nofollow">Paper</a></li><li><a href="https://nlp.stanford.edu/projects/snli/" rel="nofollow">Website</a></li></ul></td>
+<td>Accuracy</td>
+<td><ul><li>QA-Transfer(for pretraining)</li><li>SeqMatchSeq(<code>SUBMULT+NN</code> train=89.4%, test=86.8%)</li><li>BiMPM()<code>Ensemble</code> Acc=88.8%)</li></ul></td>
+<td>Text-Hypothesis-Judgement</td>
+</tr>
+<tr>
+<td>TRECQA</td>
+<td><ul><li><a href="https://aclweb.org/aclwiki/Question_Answering_(State_of_the_art)" rel="nofollow">https://aclweb.org/aclwiki/Question_Answering_(State_of_the_art)</a></li><li><a href="https://github.com/castorini/data/tree/master/TrecQA">https://github.com/castorini/data/tree/master/TrecQA</a></li><li><a href="http://cs.jhu.edu/%7Exuchen/packages/jacana-qa-naacl2013-data-results.tar.bz2" rel="nofollow">http://cs.jhu.edu/~xuchen/packages/jacana-qa-naacl2013-data-results.tar.bz2</a></li></ul></td>
+<td><ul><li>MAP</li><li>MRR</li></ul></td>
+<td>BiMPM(MAP:0.802, MRR:0.875)</td>
+<td>Question-Candidate_Answer1_to_N-relevance1_to_N</td>
+</tr>
+<tr>
+<td>SICK</td>
+<td><a href="http://clic.cimec.unitn.it/composes/sick.html" rel="nofollow">Website</a></td>
+<td>Accuracy</td>
+<td>QA-Transfer(Acc=88.2)</td>
+<td>sent1-sent2-entailment_label-relatedness_score</td>
+</tr></tbody></table>
 
 
 More dataset info can be found at the [SentEval](https://github.com/facebookresearch/SentEval) repo.
 
 
-Model/Paper | Link
------------ | ----
-SeqMatchSeq | https://arxiv.org/pdf/1611.01747.pdf
-QA-Transfer | http://aclweb.org/anthology/P17-2081
-BiMPM | https://arxiv.org/pdf/1702.03814.pdf
+Links to Papers:
+- [SeqMatchSeq](https://arxiv.org/pdf/1611.01747.pdf)
+- [QA-Transfer](http://aclweb.org/anthology/P17-2081)
+- [BiMPM](https://arxiv.org/pdf/1702.03814.pdf)
 
 ### Some useful examples
 
@@ -494,6 +569,12 @@ BiMPM | https://arxiv.org/pdf/1702.03814.pdf
 
 #### MovieQA and InsuranceQA
 ![alt](https://raw.githubusercontent.com/aneesh-joshi/aneesh-joshi.github.io/master/_posts/images/MovieQA&InsuranceQA.png)
+
+### About Models
+While several models were cursorily checked, majorly, this study will have:
+- [Deep Relevance Matching Model](https://arxiv.org/abs/1711.08611)
+- [MatchPyramid Model](https://arxiv.org/abs/1606.04648)
+- [BiDirectional Attention Flow Model for QA-Transfer](http://aclweb.org/anthology/P17-2081)
 
 
 ## 6. My Journey
@@ -521,7 +602,7 @@ Seeing that DRMM_TKS wasn't doing so well, I moved my attention to the next best
 
 It was around this point that we came to the realization that the score wasn't much more than the baseline and a score of `unsupervised baseline plus 0.15` would be needed to make it a worthwhile model to collect supervised data for.
 
-##### String of events leading to a change in models
+#### String of events leading to a change in models
 I started looking for other datasets and happened to stumble upon the [BiMPM](https://arxiv.org/abs/1702.03814) paper which claimed a score of 0.71 on WikiQA. In it's score comparison table
 
 ![alt](https://raw.githubusercontent.com/aneesh-joshi/aneesh-joshi.github.io/master/_posts/images/pic1.png)
@@ -584,7 +665,7 @@ This can be remodelled such that:
 
 Effectively, we get a really big good dataset in the QA domain. The converted file is almost 110 MB.
 
-![alt](_images/Bidaf_T_scores.png)
+![alt](https://raw.githubusercontent.com/aneesh-joshi/Similarity-Learning-Evaluation-Scripts/master/_images/Bidaf_T_scores.png)
 
 The new model, BiDAF-T is then trained on SQUAD-T. It gets **MAP : 0.75** on WikiQA test set.  
 When BiDAF-T is finetuned on WikiQA, it gets **MAP : 0.76**  
@@ -623,35 +704,31 @@ I got 0.64 on average (getting a 0.67 at one point) but this isn't more than Mat
 ## 7. Benchmarked Models
 
 ### WikiQA
+WikiQA test set | w2v 200 dim | FT 300 dim | MatchPyramid | DRMM_TKS | BiDAF only pretrain | BiDAF pretrain + finetune | MatchPyramid Untrained Model | DRMM_TKS Untrained Model | BiDAF Untrained Model
+-- | -- | -- | -- | -- | -- | -- | -- | -- | --
+map | 0.6285 | 0.6199 | **0.6463** | 0.6354 | 0.6042 | 0.6257 | 0.5107 | 0.5394 | 0.3291
+gm_map | 0.4972 | 0.4763 | **0.5071** | 0.4989 | 0.4784 | 0.4986 | 0.3753 | 0.4111 | 0.2455
+Rprec | 0.4709 | 0.4715 | **0.5007** | 0.4801 | 0.416 | 0.4616 | 0.3471 | 0.3512 | 0.1156
+bpref | 0.4613 | 0.4642 | **0.4977** | 0.4795 | 0.4145 | 0.4569 | 0.3344 | 0.3469 | 0.1101
+recip_rank | 0.6419 | 0.6336 | **0.6546** | 0.6437 | 0.6179 | 0.6405 | 0.519 | 0.5473 | 0.3312
+iprec_at_recall_0.00 | 0.6469 | 0.6375 | **0.6602** | 0.648 | 0.6224 | 0.6441 | 0.5242 | 0.5534 | 0.3396
+iprec_at_recall_0.10 | 0.6469 | 0.6375 | **0.6602** | 0.648 | 0.6224 | 0.6441 | 0.5242 | 0.5534 | 0.3396
+iprec_at_recall_0.20 | 0.6469 | 0.6375 | **0.6602** | 0.648 | 0.6224 | 0.6441 | 0.5242 | 0.5534 | 0.3396
+iprec_at_recall_0.30 | 0.6431 | 0.6314 | **0.6572** | 0.648 | 0.6177 | 0.6393 | 0.5213 | 0.5515 | 0.3382
+iprec_at_recall_0.40 | 0.6404 | 0.6293 | **0.6537** | 0.6458 | 0.614 | 0.6353 | 0.5189 | 0.5488 | 0.3382
+iprec_at_recall_0.50 | 0.6404 | 0.6293 | **0.6537** | 0.6458 | 0.614 | 0.6353 | 0.5189 | 0.5488 | 0.3382
+iprec_at_recall_0.60 | 0.6196 | 0.6115 | **0.6425** | 0.6296 | 0.5968 | 0.6167 | 0.5073 | 0.5348 | 0.3289
+iprec_at_recall_0.70 | 0.6196 | 0.6115 | **0.6425** | 0.6296 | 0.5968 | 0.6167 | 0.5073 | 0.5348 | 0.3289
+iprec_at_recall_0.80 | 0.6175 | 0.6094 | 0.6401 | **0.627** | 0.594 | 0.6143 | 0.5049 | 0.5333 | 0.3263
+iprec_at_recall_0.90 | 0.6175 | 0.6094 | 0.6401 | **0.627** | 0.594 | 0.6143 | 0.5049 | 0.5333 | 0.3263
+iprec_at_recall_1.00 | 0.6175 | 0.6094 | 0.6401 | **0.627** | 0.594 | 0.6143 | 0.5049 | 0.5333 | 0.3263
+P_5 | 0.1967 | 0.1926 | 0.1967 | 0.1934 | 0.1984 | **0.2008** | 0.1704 | 0.1835 | 0.1473
+P_10 | 0.1119 | 0.1119 | **0.1156** | 0.1152 | 0.1128 | 0.1136 | 0.1095 | 0.1144 | 0.1033
+P_15 | 0.0787 | 0.0774 | **0.079** | 0.0785 | 0.0771 | 0.0779 | 0.0787 | 0.0787 | 0.0749
+P_20 | 0.0597 | 0.0591 | 0.0599 | 0.0591 | 0.0599 | 0.0599 | **0.0603** | 0.0601 | 0.0591
 
 
-WikiQA test set | w2v 50 dim | w2v 100 dim | w2v 200 dim | w2v 300 dim | FT 300 dim | MatchPyramid | DRMM_TKS | MatchPyramid Random Baseline | DRMM_TKS Random Baseline | BiDAF only pretrain | BiDAF pretrain + finetune | BiDAF Random Baseline
--- | -- | -- | -- | -- | -- | -- | -- | -- | -- | -- | -- | --
-map | 0.6016 | 0.6148 | 0.6285 | 0.6277 | 0.6199 | 0.6463 | 0.6354 | 0.5107 | 0.5394 | 0.6042 | 0.6257 | 0.3291
-gm_map | 0.4642 | 0.4816 | 0.4972 | 0.4968 | 0.4763 | 0.5071 | 0.4989 | 0.3753 | 0.4111 | 0.4784 | 0.4986 | 0.2455
-Rprec | 0.4318 | 0.4551 | 0.4709 | 0.4667 | 0.4715 | 0.5007 | 0.4801 | 0.3471 | 0.3512 | 0.416 | 0.4616 | 0.1156
-bpref | 0.4251 | 0.4457 | 0.4613 | 0.456 | 0.4642 | 0.4977 | 0.4795 | 0.3344 | 0.3469 | 0.4145 | 0.4569 | 0.1101
-recip_rank | 0.6147 | 0.628 | 0.6419 | 0.6373 | 0.6336 | 0.6546 | 0.6437 | 0.519 | 0.5473 | 0.6179 | 0.6405 | 0.3312
-iprec_at_recall_0.00 | 0.6194 | 0.6322 | 0.6469 | 0.6437 | 0.6375 | 0.6602 | 0.648 | 0.5242 | 0.5534 | 0.6224 | 0.6441 | 0.3396
-iprec_at_recall_0.10 | 0.6194 | 0.6322 | 0.6469 | 0.6437 | 0.6375 | 0.6602 | 0.648 | 0.5242 | 0.5534 | 0.6224 | 0.6441 | 0.3396
-iprec_at_recall_0.20 | 0.6194 | 0.6322 | 0.6469 | 0.6437 | 0.6375 | 0.6602 | 0.648 | 0.5242 | 0.5534 | 0.6224 | 0.6441 | 0.3396
-iprec_at_recall_0.30 | 0.6146 | 0.6269 | 0.6431 | 0.6401 | 0.6314 | 0.6572 | 0.648 | 0.5213 | 0.5515 | 0.6177 | 0.6393 | 0.3382
-iprec_at_recall_0.40 | 0.6125 | 0.6269 | 0.6404 | 0.6394 | 0.6293 | 0.6537 | 0.6458 | 0.5189 | 0.5488 | 0.614 | 0.6353 | 0.3382
-iprec_at_recall_0.50 | 0.6125 | 0.6269 | 0.6404 | 0.6394 | 0.6293 | 0.6537 | 0.6458 | 0.5189 | 0.5488 | 0.614 | 0.6353 | 0.3382
-iprec_at_recall_0.60 | 0.5937 | 0.6068 | 0.6196 | 0.6219 | 0.6115 | 0.6425 | 0.6296 | 0.5073 | 0.5348 | 0.5968 | 0.6167 | 0.3289
-iprec_at_recall_0.70 | 0.5937 | 0.6068 | 0.6196 | 0.6219 | 0.6115 | 0.6425 | 0.6296 | 0.5073 | 0.5348 | 0.5968 | 0.6167 | 0.3289
-iprec_at_recall_0.80 | 0.5914 | 0.6039 | 0.6175 | 0.619 | 0.6094 | 0.6401 | 0.627 | 0.5049 | 0.5333 | 0.594 | 0.6143 | 0.3263
-iprec_at_recall_0.90 | 0.5914 | 0.6039 | 0.6175 | 0.619 | 0.6094 | 0.6401 | 0.627 | 0.5049 | 0.5333 | 0.594 | 0.6143 | 0.3263
-iprec_at_recall_1.00 | 0.5914 | 0.6039 | 0.6175 | 0.619 | 0.6094 | 0.6401 | 0.627 | 0.5049 | 0.5333 | 0.594 | 0.6143 | 0.3263
-P_5 | 0.1893 | 0.1951 | 0.1967 | 0.1975 | 0.1926 | 0.1967 | 0.1934 | 0.1704 | 0.1835 | 0.1984 | 0.2008 | 0.1473
-P_10 | 0.1107 | 0.1111 | 0.1119 | 0.114 | 0.1119 | 0.1156 | 0.1152 | 0.1095 | 0.1144 | 0.1128 | 0.1136 | 0.1033
-P_15 | 0.0774 | 0.0776 | 0.0787 | 0.0787 | 0.0774 | 0.079 | 0.0785 | 0.0787 | 0.0787 | 0.0771 | 0.0779 | 0.0749
-P_20 | 0.0595 | 0.0597 | 0.0597 | 0.0597 | 0.0591 | 0.0599 | 0.0591 | 0.0603 | 0.0601 | 0.0599 | 0.0599 | 0.0591
-ndcg_cut_1 | 0.4403 | 0.4486 | 0.4691 | 0.4587 | 0.4774 | 0.0402 | 0.0402 | 0.0402 | 0.0402 | 0.0402 | 0.0402 | 0.0402
-ndcg_cut_3 | 0.5867 | 0.6077 | 0.6213 | 0.626 | 0.6033 | 0.0121 | 0.0121 | 0.0121 | 0.0121 | 0.0121 | 0.0121 | 0.0121
-ndcg_cut_5 | 0.6417 | 0.6598 | 0.6722 | 0.6743 | 0.6593 | 0.006 | 0.006 | 0.006 | 0.006 | 0.006 | 0.006 | 0.006
-ndcg_cut_10 | 0.6825 | 0.693 | 0.7055 | 0.7102 | 0.6982 | 0.0024 | 0.0024 | 0.0024 | 0.0024 | 0.0024 | 0.0024 | 0.0024
-ndcg_cut_20 | 0.6993 | 0.7101 | 0.7208 | 0.7211 | 0.7115 | 0.0012 | 0.0012 | 0.0012 | 0.0012 | 0.0012 | 0.0012 | 0.0012
+
 
 
 
@@ -671,9 +748,9 @@ Word2Vec Baseline | 37.02%
   | Accuracy
 -- | --
 MatchPyramid | 56.82%
-MatchPyramid Random | 23%
 DTKS | 57.00%
-DTKS Random | 29%
+MatchPyramid Untrained Model | 23%
+DTKS Untrained Model | 29%
 
 ### SNLI
 
@@ -681,77 +758,74 @@ DTKS Random | 29%
 -- | --
 MatchPyramid | 53.57%
 DRMM_TKS | 43.15%
-MatchPyramid Random | 33%
-DRMM_TKS Random | 33%
+MatchPyramid Untrained Model| 33%
+DRMM_TKS Untrained Model | 33%
 
 
 ### InsuranceQA
 
-#### MatchPyramid
+#### Test1 set
 
 
-Metric | Test1 | Test2 | Word2Vec Baseline | Test1 Random Baseline | Test2 Random Baseline
--- | -- | -- | -- | -- | --
-map | 0.8103 | 0.8003 | 0.6975 | 0.4074 | 0.41
-gm_map | 0.727 | 0.7104 | 0.5793 | 0.3118 | 0.313
-Rprec | 0.7124 | 0.7005 | 0.5677 | 0.2274 | 0.2294
-bpref | 0.7177 | 0.7065 | 0.569 | 0.2175 | 0.2195
-recip_rank | 0.8348 | 0.8269 | 0.7272 | 0.4295 | 0.4374
-iprec_at_recall_0.00 | 0.8413 | 0.8316 | 0.7329 | 0.444 | 0.4501
-iprec_at_recall_0.10 | 0.8413 | 0.8316 | 0.7329 | 0.444 | 0.4501
-iprec_at_recall_0.20 | 0.8412 | 0.8314 | 0.7329 | 0.4437 | 0.4499
-iprec_at_recall_0.30 | 0.8398 | 0.8294 | 0.7316 | 0.4411 | 0.4471
-iprec_at_recall_0.40 | 0.834 | 0.8225 | 0.7241 | 0.4305 | 0.437
-iprec_at_recall_0.50 | 0.8336 | 0.8224 | 0.7238 | 0.4303 | 0.4368
-iprec_at_recall_0.60 | 0.7967 | 0.7853 | 0.6813 | 0.3963 | 0.3943
-iprec_at_recall_0.70 | 0.7964 | 0.7851 | 0.6812 | 0.3961 | 0.3939
-iprec_at_recall_0.80 | 0.7847 | 0.7741 | 0.6662 | 0.3874 | 0.3842
-iprec_at_recall_0.90 | 0.7841 | 0.7731 | 0.6652 | 0.3868 | 0.3835
-iprec_at_recall_1.00 | 0.7841 | 0.7731 | 0.6652 | 0.3868 | 0.3835
-P_5 | 0.2642 | 0.2596 | 0.243 | 0.174 | 0.1739
-P_10 | 0.1453 | 0.1441 | 0.1453 | 0.1453 | 0.1441
-P_15 | 0.0969 | 0.096 | 0.0969 | 0.0969 | 0.096
-P_20 | 0.0727 | 0.072 | 0.0727 | 0.0727 | 0.072
-P_30 | 0.0484 | 0.048 | 0.0484 | 0.0484 | 0.048
-P_100 | 0.0145 | 0.0144 | 0.0145 | 0.0145 | 0.0144
-P_200 | 0.0073 | 0.0072 | 0.0073 | 0.0073 | 0.0072
-P_500 | 0.0029 | 0.0029 | 0.0029 | 0.0029 | 0.0029
-P_1000 | 0.0015 | 0.0014 | 0.0015 | 0.0015 | 0.0014
-
-
-#### DRMM_TKS
-
-
-Metric | Test1 | Test2 | Word2Vec Baseline | Test1 Random Baseline | Test2 Random Baseline
--- | -- | -- | -- | -- | --
-map | 0.617 | 0.5998 | 0.7055 | 0.24 | 0.2414
-gm_map | 0.5024 | 0.4835 | 0.589 | 0.1879 | 0.1899
-Rprec | 0.4516 | 0.4372 | 0.5773 | 0.0806 | 0.0829
-bpref | 0.4532 | 0.4377 | 0.58 | 0.0728 | 0.0743
-recip_rank | 0.6496 | 0.6301 | 0.7362 | 0.2476 | 0.2488
-iprec_at_recall_0.00 | 0.6575 | 0.6396 | 0.7413 | 0.2682 | 0.2698
-iprec_at_recall_0.10 | 0.6575 | 0.6396 | 0.7413 | 0.2682 | 0.2698
-iprec_at_recall_0.20 | 0.6573 | 0.6394 | 0.7413 | 0.2676 | 0.2697
-iprec_at_recall_0.30 | 0.6547 | 0.6379 | 0.7402 | 0.2659 | 0.268
-iprec_at_recall_0.40 | 0.6475 | 0.6293 | 0.7319 | 0.2589 | 0.2611
-iprec_at_recall_0.50 | 0.6473 | 0.6289 | 0.7317 | 0.2589 | 0.2611
-iprec_at_recall_0.60 | 0.6 | 0.5825 | 0.6869 | 0.2383 | 0.2391
-iprec_at_recall_0.70 | 0.5995 | 0.5822 | 0.6866 | 0.2381 | 0.2391
-iprec_at_recall_0.80 | 0.5833 | 0.5694 | 0.6734 | 0.2362 | 0.2364
-iprec_at_recall_0.90 | 0.5819 | 0.5688 | 0.6731 | 0.2357 | 0.2363
-iprec_at_recall_1.00 | 0.5819 | 0.5688 | 0.6731 | 0.2357 | 0.2363
-P_5 | 0.2352 | 0.2292 | 0.2426 | 0.0804 | 0.0856
-P_10 | 0.1453 | 0.1441 | 0.1441 | 0.1453 | 0.1441
-P_15 | 0.0969 | 0.096 | 0.096 | 0.0969 | 0.096
-P_20 | 0.0727 | 0.072 | 0.072 | 0.0727 | 0.072
-P_30 | 0.0484 | 0.048 | 0.048 | 0.0484 | 0.048
-P_100 | 0.0145 | 0.0144 | 0.0144 | 0.0145 | 0.0144
-P_200 | 0.0073 | 0.0072 | 0.0072 | 0.0073 | 0.0072
-P_500 | 0.0029 | 0.0029 | 0.0029 | 0.0029 | 0.0029
-P_1000 | 0.0015 | 0.0014 | 0.0014 | 0.0015 | 0.0014
+IQA Test1 | w2v(300 dim) | MatchPyramid | DRMM_TKS
+-- | -- | -- | --
+map | 0.6975 | **0.8194** | 0.5539
+gm_map | 0.5793 | **0.7415** | 0.4295
+Rprec | 0.5677 | **0.7246** | 0.3902
+bpref | 0.569 | **0.7296** | 0.3908
+recip_rank | 0.7272 | **0.8445** | 0.5901
+iprec_at_recall_0.00 | 0.7329 | **0.8498** | 0.5978
+iprec_at_recall_0.10 | 0.7329 | **0.8498** | 0.5978
+iprec_at_recall_0.20 | 0.7329 | **0.8498** | 0.5977
+iprec_at_recall_0.30 | 0.7316 | **0.8485** | 0.5944
+iprec_at_recall_0.40 | 0.7241 | **0.8416** | 0.5841
+iprec_at_recall_0.50 | 0.7238 | **0.8407** | 0.5838
+iprec_at_recall_0.60 | 0.6813 | **0.8055** | 0.5349
+iprec_at_recall_0.70 | 0.6812 | **0.8049** | 0.534
+iprec_at_recall_0.80 | 0.6662 | **0.7938** | 0.5185
+iprec_at_recall_0.90 | 0.6652 | **0.793** | 0.5171
+iprec_at_recall_1.00 | 0.6652 | **0.793** | 0.5171
+P_5 | 0.243 | **0.2663** | 0.2154
+P_10 | 0.1453 | 0.1453 | 0.1453
+P_15 | 0.0969 | 0.0969 | 0.0969
+P_20 | 0.0727 | 0.0727 | 0.0727
+P_30 | 0.0484 | 0.0484 | 0.0484
+P_100 | 0.0145 | 0.0145 | 0.0145
+P_200 | 0.0073 | 0.0073 | 0.0073
+P_500 | 0.0029 | 0.0029 | 0.0029
+P_1000 | 0.0015 | 0.0015 | 0.0015
 
 
 
+#### Test2 set
+
+IQA Test2 | Word2Vec (300 dim) | MatchPyramid | DRMM_TKS
+-- | -- | -- | --
+map | 0.7055 | **0.8022** | 0.5354
+gm_map | 0.589 | **0.714** | 0.4137
+Rprec | 0.5773 | **0.698** | 0.3725
+bpref | 0.58 | **0.7048** | 0.3704
+recip_rank | 0.7362 | **0.826** | 0.5698
+iprec_at_recall_0.00 | 0.7413 | **0.8318** | 0.5783
+iprec_at_recall_0.10 | 0.7413 | **0.8318** | 0.5783
+iprec_at_recall_0.20 | 0.7413 | **0.8316** | 0.5783
+iprec_at_recall_0.30 | 0.7402 | **0.8304** | 0.5757
+iprec_at_recall_0.40 | 0.7319 | **0.8243** | 0.5657
+iprec_at_recall_0.50 | 0.7317 | **0.8243** | 0.5652
+iprec_at_recall_0.60 | 0.6869 | **0.7903** | 0.5152
+iprec_at_recall_0.70 | 0.6866 | **0.7898** | 0.5147
+iprec_at_recall_0.80 | 0.6734 | **0.7771** | 0.5016
+iprec_at_recall_0.90 | 0.6731 | **0.7763** | 0.5011
+iprec_at_recall_1.00 | 0.6731 | **0.7763** | 0.5011
+P_5 | 0.2426 | **0.2602** | 0.2087
+P_10 | 0.1441 | 0.1441 | 0.1441
+P_15 | 0.096 | 0.096 | 0.096
+P_20 | 0.072 | 0.072 | 0.072
+P_30 | 0.048 | 0.048 | 0.048
+P_100 | 0.0144 | 0.0144 | 0.0144
+P_200 | 0.0072 | 0.0072 | 0.0072
+P_500 | 0.0029 | 0.0029 | 0.0029
+P_1000 | 0.0014 | 0.0014 | 0.0014
 
 ## 8. Notes on Finetuning Models
 Fine tuning deep learning models can be tough, considering the model runtimes and the number of parameters.  
@@ -772,6 +846,7 @@ While the models seem to be doing the best currently, they are a bit difficult t
 My time spent with understanding, developing and testing Neural Networks for Similarity Learning has brought out the conclusions that:
 - the current methods are not significantly better than a simple unsupervised word2vec baseline.
 - the current methods are unreproducible/difficult to reproduce.
+
 This work and effort has provided:
 - a method to evaluate models
 - implementations of some of the current SOTA models
