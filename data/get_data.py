@@ -108,4 +108,4 @@ if __name__ == '__main__':
         download(snli_url, snli_file, args.output_dir, unzip=True)
         download(SICK_url, SICK_file, args.output_dir, unzip=True)
         download(SQUAD1_train_url, SQUAD1_train_file, args.output_dir)
-        os.system('git clone ' + InsuranceQA_git_link)
+        # os.system('git clone ' + InsuranceQA_git_link)
