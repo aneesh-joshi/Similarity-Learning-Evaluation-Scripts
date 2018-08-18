@@ -1,4 +1,4 @@
-from keras.layers import Embedding, Dense, Input
+from keras.layers import Embedding, Dense, Input, Concatenate
 from keras.models import Model
 
 
@@ -9,19 +9,22 @@ class BaselineModel:
         self.optimizer = optimizer
         self.model = None
 
-    def train(self, X, y):
+    def train(self, X, y, n_epochs=3):
         if self.model is None:
             self.model = self._get_model()
             self.model.compile(self.optimizer, 'categorical_crossentropy', metrics=['acc'])
 
-        self.model.fit(X, y)
+        self.model.fit(X, y, epochs=n_epochs)
 
     def _get_model(self):
-        input_vec = Input(shape=(self.vector_size,))
-        fc1 = Dense(100, activation='relu')(input_vec)
+        input_vec1 = Input(shape=(self.vector_size,), name='x1')
+        input_vec2 = Input(shape=(self.vector_size,), name='x2')
+        concat_vec = Concatenate()([input_vec1, input_vec2])
+
+        fc1 = Dense(100, activation='relu')(concat_vec)
         fc2 = Dense(64, activation='relu')(fc1)
         fc3 = Dense(self.num_predictions, activation='softmax')(fc2)
 
-        model = Model(input_vec, fc3)
+        model = Model([input_vec1, input_vec2], fc3)
         model.summary()
         return model
