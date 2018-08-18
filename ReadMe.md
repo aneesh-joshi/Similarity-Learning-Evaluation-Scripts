@@ -7,6 +7,24 @@ This repo contains:
 
 Please refer to [Report.md](Report.md) for the detailed study which explains what Similarity Learning is, the tasks that it involves and different models used for it. (Highly recommended to understand current repo)
 
+## Requirements
+- OS : Linux (I tested on Ubuntu 16.04)
+- Python : 3.6 (although it should work on python 3.x)
+
+To create the test env:
+
+Get virtualenv
+`pip install virtualenv`
+
+Create a virtual environment
+`virtualenv sl_env`
+
+Activate the env
+`source sl_env/bin/activate`
+
+Install the requirements
+`pip install -r requirements.txt`
+
 ## Getting Started
 
 You can just run the `download_and_setup.sh` script to do everything I will describe below.
