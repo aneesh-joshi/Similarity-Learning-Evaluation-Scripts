@@ -10,7 +10,7 @@ from sl_eval.models import MatchPyramid, DRMM_TKS
 
 
 if __name__ == '__main__':
-	sick_folder_path = os.path.join('..', 'data', 'SICK')
+	sick_folder_path = os.path.join('..', 'data')
 	sick_reader = SickReader(sick_folder_path)
 
 

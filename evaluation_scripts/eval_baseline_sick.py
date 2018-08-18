@@ -3,6 +3,7 @@ import os
 sys.path.append('..')
 from sl_eval.models import BaselineModel
 from data_readers import SickReader
+from gensim import downloader as api
 import numpy as np
     
 def sent2vec(sent):
@@ -23,12 +24,12 @@ def sent2vec(sent):
 
     return np.mean(vec, axis=0)
 
-def kv_model(word):
-    return np.random.random((300, 1))
 
 if __name__ == '__main__':
     sick_folder_path = os.path.join('..', 'data', 'SICK')
     sick_reader = SickReader(sick_folder_path)
+
+    kv_model = api.load('glove-wiki-gigaword-100')
 
 
     x1, x2, label = sick_reader.get_entailment_data()
@@ -37,4 +38,8 @@ if __name__ == '__main__':
 
     print(train_x1[9], sent2vec(train_x1[9]))
 
+
+    vectored_x1 = [sent2vec(xi) for xi in train_x1]
+    vectored_x1 = np.array(vectored_x1)
+    print(vectored_x1.shape)
 
