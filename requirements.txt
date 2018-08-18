@@ -14,6 +14,7 @@ Keras==2.0.5
 Markdown==2.6.11
 nltk==3.3
 numpy==1.15.0
+overrides==1.9
 protobuf==3.6.1
 python-dateutil==2.7.3
 PyYAML==3.13
