@@ -27,6 +27,9 @@ def sent2vec(sent):
 
 
 if __name__ == '__main__':
+
+    print('Evaluating SNLI Baseline')
+
     snli_folder_path = os.path.join('..', 'data', 'snli_1.0')
     snli_reader = SnliReader(snli_folder_path)
 

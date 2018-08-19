@@ -27,6 +27,9 @@ def sent2vec(sent):
 
 
 if __name__ == '__main__':
+
+    print('Evaluating SICK Baseline')
+
     sick_folder_path = os.path.join('..', 'data', 'SICK')
     sick_reader = SickReader(sick_folder_path)
 

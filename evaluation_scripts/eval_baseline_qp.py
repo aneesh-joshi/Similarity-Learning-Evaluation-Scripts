@@ -35,7 +35,7 @@ def preprocess(sent):
 
 if __name__ == '__main__':
 
-
+    print('Evaluating Quora Duplicate Questions Baseline')
     num_predictions = 2
     num_embedding_dims = 300
     kv_model = api.load('glove-wiki-gigaword-' + str(num_embedding_dims))
