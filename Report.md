@@ -757,7 +757,9 @@ P_20 | 0.0597 | 0.0591 | 0.0599 | 0.0591 | 0.0599 | 0.0599 | **0.0603** | 0.0601
 -- | --
 MatchPyramid | 69.20%
 DRMM TKS | 68.49%
-Word2Vec Baseline | 37.02%
+Glove Vec Averaging Baseline | 37.02%
+Glove + Regression NN | 69.02%
+Glove + Multilayer NN | 78 %
 
 
 
@@ -780,6 +782,8 @@ MatchPyramid | 53.57%
 DRMM_TKS | 43.15%
 MatchPyramid Untrained Model| 33%
 DRMM_TKS Untrained Model | 33%
+Glove + Regression NN | 58.60%
+Glove + Multilayer NN | 73.06%
 
 
 ### InsuranceQA
