@@ -65,7 +65,7 @@ if __name__ == '__main__':
 		q2.append(preprocess(row['question2']))
 		duplicate.append(int(row['is_duplicate']))
 
-	print(sum(sent_len)/len(sent_len))
+	print('Average sentence length is ' + str(sum(sent_len)/len(sent_len)))
 
 	print('Number of question pairs', len(q1))
 	print('Number of duplicates', sum(duplicate))

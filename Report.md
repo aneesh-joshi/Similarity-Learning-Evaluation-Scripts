@@ -554,6 +554,24 @@ Here, I will give examples of different datasets.
 More dataset info can be found at the [SentEval](https://github.com/facebookresearch/SentEval) repo.
 
 
+### Special note about InsuranceQA
+
+This dataset was originally released [here](https://github.com/shuzi/insuranceQA)  
+It has several different formats but at its base there is (for one data point):
+- a question
+- one or more correct answers
+- a pool of all answers (correct and incorrect)
+
+It doesn't have a simple format like question - document - relevance. So, we'll have to convert it to the QA format.
+That basically involves taking a question, its correct answer and marking it as relevant. Then for the remaining number of answers(however big you want the batch size to be), we pick (batch_size - current_size) from the pool of answers
+
+The original repo has several files and is *very* confusing.
+Luckily, there is a converted version of it [here](https://github.com/codekansas/insurance_qa_python)
+
+Since there is a pool of candidate answers from which a batch is sampled, the dataset becomes inherently stochastic.
+
+
+
 Links to Papers:
 - [SeqMatchSeq](https://arxiv.org/pdf/1611.01747.pdf)
 - [QA-Transfer](http://aclweb.org/anthology/P17-2081)
@@ -719,7 +737,7 @@ iprec_at_recall_0.40 | 0.6404 | 0.6293 | **0.6537** | 0.6458 | 0.614 | 0.6353 | 
 iprec_at_recall_0.50 | 0.6404 | 0.6293 | **0.6537** | 0.6458 | 0.614 | 0.6353 | 0.5189 | 0.5488 | 0.3382
 iprec_at_recall_0.60 | 0.6196 | 0.6115 | **0.6425** | 0.6296 | 0.5968 | 0.6167 | 0.5073 | 0.5348 | 0.3289
 iprec_at_recall_0.70 | 0.6196 | 0.6115 | **0.6425** | 0.6296 | 0.5968 | 0.6167 | 0.5073 | 0.5348 | 0.3289
-iprec_at_recall_0.80 | 0.6175 | 0.6094 | 0.6401 | **0.627** | 0.594 | 0.6143 | 0.5049 | 0.5333 | 0.3263
+iprec_at_recall_1t_recall_0.80 | 0.6175 | 0.6094 | 0.6401 | **0.627** | 0.594 | 0.6143 | 0.5049 | 0.5333 | 0.3263
 iprec_at_recall_0.90 | 0.6175 | 0.6094 | 0.6401 | **0.627** | 0.594 | 0.6143 | 0.5049 | 0.5333 | 0.3263
 iprec_at_recall_1.00 | 0.6175 | 0.6094 | 0.6401 | **0.627** | 0.594 | 0.6143 | 0.5049 | 0.5333 | 0.3263
 P_5 | 0.1967 | 0.1926 | 0.1967 | 0.1934 | 0.1984 | **0.2008** | 0.1704 | 0.1835 | 0.1473
@@ -749,6 +767,8 @@ Word2Vec Baseline | 37.02%
 -- | --
 MatchPyramid | 56.82%
 DTKS | 57.00%
+Glove + Regression NN | 59.68%
+Glove + Multilayer NN | 66.18%
 MatchPyramid Untrained Model | 23%
 DTKS Untrained Model | 29%
 

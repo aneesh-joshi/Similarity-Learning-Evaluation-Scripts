@@ -2,7 +2,7 @@ import sys
 import os
 sys.path.append('..')
 from sl_eval.models import BaselineModel
-from data_readers import SickReader
+from data_readers import SnliReader
 from gensim import downloader as api
 import numpy as np
 from keras.utils import to_categorical
@@ -27,17 +27,16 @@ def sent2vec(sent):
 
 
 if __name__ == '__main__':
-    sick_folder_path = os.path.join('..', 'data', 'SICK')
-    sick_reader = SickReader(sick_folder_path)
+    snli_folder_path = os.path.join('..', 'data', 'snli_1.0')
+    snli_reader = SnliReader(snli_folder_path)
 
     num_predictions = 3
     num_embedding_dims = 300
     kv_model = api.load('glove-wiki-gigaword-' + str(num_embedding_dims))
 
+    train_x1, train_x2, train_labels, train_annotator_labels = snli_reader.get_data('train')
+    test_x1, test_x2, test_labels, test_annotator_labels = snli_reader.get_data('test')
 
-    x1, x2, label = sick_reader.get_entailment_data()
-    train_x1, train_x2, train_labels = x1['TRAIN'], x2['TRAIN'], label['TRAIN']
-    test_x1, test_x2, test_labels = x1['TEST'], x2['TEST'], label['TEST']
 
 
     vectored_train_x1 = [sent2vec(xi) for xi in train_x1]
