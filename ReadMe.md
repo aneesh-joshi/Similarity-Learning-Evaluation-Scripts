@@ -7,7 +7,14 @@ This repo contains:
 
 Please refer to [Report.md](Report.md) for the detailed study which explains what Similarity Learning is, the tasks that it involves and different models used for it. (Highly recommended to understand current repo)
 
-Part of the work was made as PR to gensim which can be found [here](https://github.com/RaRe-Technologies/gensim/pull/2050)
+This repo was made as a part of Google Summer of Code 2018 with the [gensim repo](https://github.com/RaRe-Technologies/gensim). The code related to it has been consolidated in this current repository. Other related things are :  
+- [The Pull Request made to gensim](https://github.com/RaRe-Technologies/gensim/pull/2050)
+- My Blog posts
+	- [Learning Similarities - Part 1](https://aneesh-joshi.github.io/jekyll/update/2018/06/12/learning-similarities-part-1.html)
+	- [Learning Similarities - Part 2](https://aneesh-joshi.github.io/jekyll/update/2018/07/09/learning-similarities-part-2.html)
+	- [Learning Similarities - Part 3](https://aneesh-joshi.github.io/jekyll/update/2018/07/09/learning-similarities-part-3.html)
+	- [Datasets for Similarity Learning](https://aneesh-joshi.github.io/jekyll/update/2018/07/18/dataset-description.html)
+	- [Learning Similarities - Part 4(Final)](https://aneesh-joshi.github.io/jekyll/update/2018/08/10/learning-similarities-part-4.html)
 
 ## Requirements
 - OS : Linux (I tested on Ubuntu 16.04)
