@@ -54,6 +54,12 @@ source sl_env/bin/activate
 echo "Install the requirements"
 pip install -r requirements.txt
 
+# Use gpu version if specified in arguments
+echo "Getting gpu version of tensorflow"
+if [ $1 = "gpu" ]; then 
+	pip install -r requirements_gpu.txt;
+fi
+
 echo "Download the needed data"
 cd data/
 python get_data.py

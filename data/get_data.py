@@ -111,3 +111,6 @@ if __name__ == '__main__':
             print('Removing old git repo')
             os.system('rm insurance_qa_python')
         os.system('git clone ' + InsuranceQA_git_link)
+        os.chdir('insurance_qa_python/')
+        os.system('git checkout 3a887a63028cc4dfe2995c167e98b90d98c8afee')
+        os.chdir('..')
