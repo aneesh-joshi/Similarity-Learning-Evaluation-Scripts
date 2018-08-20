@@ -29,7 +29,6 @@ chmod +x download_and_setup.sh
 ./download_and_setup.sh gpu
 ```
 
-
 The `download_and_setup.sh` script should:  
 - create a virtualenv called `sl_env`
 - install dependencies from `requirements.txt` (and `requirements_gpu.txt`)
@@ -120,7 +119,7 @@ You can run each model by executing their script. So, to evaluate SICK:
 
 	python eval_sick.py
 
-For datasets like SICK, SNLI, Quora Duplicate Questions : The result will be printed in the terminal
+For datasets like SICK, SNLI, Quora Duplicate Questions : The result will be printed in the terminal  
 For WikiQA and InsuranceQA : The result is saved as a `qrels` and a `pred` file which can be evaluated using `trec_eval` binary
 
 Since there is a random seed set, the number of threads is limited to 1. This reduces processing speeds.

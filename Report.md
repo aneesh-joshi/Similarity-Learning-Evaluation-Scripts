@@ -721,6 +721,13 @@ I got 0.64 on average (getting a 0.67 at one point) but this isn't more than Mat
 
 ## 7. Benchmarked Models
 
+In the tables below,  
+w2v/Glove Vec Averaging Baseline : refers to the score between 2 sentences calculated by averaging the word vectors(taken from [Glove of Pennington et al](https://nlp.stanford.edu/projects/glove/)) of their words and then taking the Cosine Similarity.
+FT : refers to the same as above but using [FastText](https://github.com/facebookresearch/fastText)
+Glove + Regression NN : refers to getting sentence representations in the same way as above but using a single layer neural network with softmax activation
+Glove + Multilayer NN : same as above but using a multilayer neural network instead of a single layer
+
+
 ### WikiQA
 WikiQA test set | w2v 200 dim | FT 300 dim | MatchPyramid | DRMM_TKS | BiDAF only pretrain | BiDAF pretrain + finetune | MatchPyramid Untrained Model | DRMM_TKS Untrained Model | BiDAF Untrained Model
 -- | -- | -- | -- | -- | -- | -- | -- | -- | --
@@ -759,7 +766,7 @@ MatchPyramid | 69.20%
 DRMM TKS | 68.49%
 Glove Vec Averaging Baseline | 37.02%
 Glove + Regression NN | 69.02%
-Glove + Multilayer NN | 78 %
+Glove + Multilayer NN | **78 %**
 
 
 
@@ -770,7 +777,7 @@ Glove + Multilayer NN | 78 %
 MatchPyramid | 56.82%
 DTKS | 57.00%
 Glove + Regression NN | 59.68%
-Glove + Multilayer NN | 66.18%
+Glove + Multilayer NN | **66.18%**
 MatchPyramid Untrained Model | 23%
 DTKS Untrained Model | 29%
 
@@ -783,10 +790,12 @@ DRMM_TKS | 43.15%
 MatchPyramid Untrained Model| 33%
 DRMM_TKS Untrained Model | 33%
 Glove + Regression NN | 58.60%
-Glove + Multilayer NN | 73.06%
+Glove + Multilayer NN | **73.06%**
 
 
 ### InsuranceQA
+
+Note: InsuranceQA is a "different dataset". It has a question, with one or two correct answers along with a pool of almost 500 incorrect answers. The InsuranceQA reader will, for a question randomly sample some incorrect answers to include in a batch. The dataset has been provided with 2 test sets (Test1 and Test2)
 
 #### Test1 set
 
