@@ -11,28 +11,54 @@ Please refer to [Report.md](Report.md) for the detailed study which explains wha
 - OS : Linux (I tested on Ubuntu 16.04)
 - Python : 3.6 (although it should work on python 3.x)
 
-To create the test env:
-
-Get virtualenv
-`pip install virtualenv`
-
-Create a virtual environment
-`virtualenv sl_env`
-
-Activate the env
-`source sl_env/bin/activate`
-
-Install the requirements
-`pip install -r requirements.txt`
-
 ## Getting Started
 
 You can just run the `download_and_setup.sh` script to do everything I will describe below.
 
-	chmod +x download_and_setup.sh
-	./download_and_setup.sh
+```bash
+chmod +x download_and_setup.sh
+./download_and_setup.sh
+```
 
-Also, heck out [this notebook](SLEvalDownloadExample.ipynb) which does everything from cloning this repo to setting things up (no training)
+Also, check out [this notebook](SLEvalDownloadExample.ipynb) which does everything from cloning this repo to setting things up (no training)
+
+This should
+- create a virtualenv called `sl_env`
+- install dependencies from `requirements.txt`
+- download needed data
+- convert a SQUAD dataset to QA dataset
+- get and `make` the trec binary
+
+
+If you prefer to understand better, here's the script:
+
+```bash
+echo "Get virtualenv"
+pip install virtualenv
+
+echo "Create a virtual environment"
+virtualenv sl_env
+
+echo "Activate the env"
+source sl_env/bin/activate
+
+echo "Install the requirements"
+pip install -r requirements.txt
+
+echo "Download the needed data"
+cd data/
+python get_data.py
+
+echo "Convert the SQUAD data set to SQUAD-T (QA) dataset"
+cd ../misc_scripts/
+python squad2QA.py --squad_path ../data/train-v1.1.json
+
+echo "Get trec eval binary"
+python get_trec.py
+```
+
+Below, I will explain the steps in more detail.
+
 
 ### Downloading Datasets
 We have several datasets which can be used to evaluate your Similarity Learning model. All you have to do is:
