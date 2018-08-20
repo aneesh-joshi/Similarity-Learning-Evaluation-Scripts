@@ -7,6 +7,8 @@ This repo contains:
 
 Please refer to [Report.md](Report.md) for the detailed study which explains what Similarity Learning is, the tasks that it involves and different models used for it. (Highly recommended to understand current repo)
 
+Part of the work was made as PR to gensim which can be found [here](https://github.com/RaRe-Technologies/gensim/pull/2050)
+
 ## Requirements
 - OS : Linux (I tested on Ubuntu 16.04)
 - Python : 3.6 (although it should work on python 3.x)
