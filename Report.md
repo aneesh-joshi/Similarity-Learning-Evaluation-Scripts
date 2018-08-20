@@ -722,13 +722,14 @@ I got 0.64 on average (getting a 0.67 at one point) but this isn't more than Mat
 ## 7. Benchmarked Models
 
 In the tables below,  
-w2v/Glove Vec Averaging Baseline : refers to the score between 2 sentences calculated by averaging the word vectors(taken from [Glove of Pennington et al](https://nlp.stanford.edu/projects/glove/)) of their words and then taking the Cosine Similarity.
-FT : refers to the same as above but using [FastText](https://github.com/facebookresearch/fastText)
-Glove + Regression NN : refers to getting sentence representations in the same way as above but using a single layer neural network with softmax activation
-Glove + Multilayer NN : same as above but using a multilayer neural network instead of a single layer
+w2v/Glove Vec Averaging Baseline : refers to the score between 2 sentences calculated by averaging the word vectors(taken from [Glove of Pennington et al](https://nlp.stanford.edu/projects/glove/)) of their words and then taking the Cosine Similarity.  
+FT : refers to the same as above but using [FastText](https://github.com/facebookresearch/fastText)  
+Glove + Regression NN : refers to getting sentence representations in the same way as above but using a single layer neural network with softmax activation  
+Glove + Multilayer NN : same as above but using a multilayer neural network instead of a single layer  
 
 
 ### WikiQA
+
 WikiQA test set | w2v 200 dim | FT 300 dim | MatchPyramid | DRMM_TKS | BiDAF only pretrain | BiDAF pretrain + finetune | MatchPyramid Untrained Model | DRMM_TKS Untrained Model | BiDAF Untrained Model
 -- | -- | -- | -- | -- | -- | -- | -- | -- | --
 map | 0.6285 | 0.6199 | **0.6463** | 0.6354 | 0.6042 | 0.6257 | 0.5107 | 0.5394 | 0.3291
