@@ -15,16 +15,25 @@ Please refer to [Report.md](Report.md) for the detailed study which explains wha
 
 You can just run the `download_and_setup.sh` script to do everything I will describe below.
 
+If you don't have a GPU:
+
 ```bash
 chmod +x download_and_setup.sh
 ./download_and_setup.sh
 ```
 
+If you have a GPU:
+
+```bash
+chmod +x download_and_setup.sh
+./download_and_setup.sh gpu
+```
+
 Also, check out [this notebook](SLEvalDownloadExample.ipynb) which does everything from cloning this repo to setting things up (no training)
 
-This should
+The `download_and_setup.sh` script should:  
 - create a virtualenv called `sl_env`
-- install dependencies from `requirements.txt`
+- install dependencies from `requirements.txt` (and `requirements_gpu.txt`)
 - download needed data
 - convert a SQUAD dataset to QA dataset
 - get and `make` the trec binary
@@ -71,16 +80,20 @@ This will download:
 - SNLI
 - SICK
 
-Additionally, we need the Quora Duplicate Questions Dataset and Glove Embedding vectors. Luckily, they are available in [gensim-data](https://github.com/RaRe-Technologies/gensim-data) and will be automagically downloaded when needed. You need to have gensim for this. gensim and other dependencies can be installed easily with:
+Additionally, we need the Quora Duplicate Questions Dataset and Glove Embedding vectors. Luckily, they are available in [gensim-data](https://github.com/RaRe-Technologies/gensim-data) and will be automagically downloaded when needed. You need to have gensim for this. gensim and other dependencies are included in `requirements.txt` and should be installed by the `download_and_setup.sh` script. If you want to install it manually:
 
-	python setup.py
+`pip install -r requirements.txt`
+
+If you have GPU, please **also** run:  
+
+`pip install -r requirements_gpu.txt`
 
 For getting the SQUAD-T dataset, you will have to convert the existing SQUAD dataset. For this, use the [misc_scripts/squad2QA.py](https://github.com/aneesh-joshi/Similarity-Learning-Evaluation-Scripts/blob/master/misc_scripts/squad2QA.py).
 
 	python squad2QA.py --squad_path ../data/train-v1.1.json
 
 `train-v1.1.json` is the squad file with span level data which should be downloaded by `get_data.py`
-The QA dataset will be saved in the `data` folder and accessed from there by the `eval_wikiqa`
+The QA dataset will be saved in the `data` folder and accessed from there.
 
 Additionally, you also need the `trec_eval` binary for evaluating QA datasets. You can get it easily from `misc_scripts/get_trec.py`by:
 
@@ -103,7 +116,7 @@ You can run each model by executing their script. So, to evaluate SICK:
 	python eval_sick.py
 
 For datasets like SICK, SNLI, Quora Duplicate Questions : The result will be printed in the terminal
-For WikiQA and InsuranceQA : The result is saved as a qrels and a pred file which can be evaluated using `trec_eval` binary
+For WikiQA and InsuranceQA : The result is saved as a `qrels` and a `pred` file which can be evaluated using `trec_eval` binary
 
 Since there is a random seed set, the number of threads is limited to 1. This reduces processing speeds.
 Ideally, you should run scripts like :
