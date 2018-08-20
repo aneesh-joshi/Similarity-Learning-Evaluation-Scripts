@@ -29,7 +29,6 @@ chmod +x download_and_setup.sh
 ./download_and_setup.sh gpu
 ```
 
-Also, check out [this notebook](SLEvalDownloadExample.ipynb) which does everything from cloning this repo to setting things up (no training)
 
 The `download_and_setup.sh` script should:  
 - create a virtualenv called `sl_env`
